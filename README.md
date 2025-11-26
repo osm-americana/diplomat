@@ -14,8 +14,8 @@ Diplomat is compatible with applications using MapLibre GL&nbsp;JS v5.13.0 and a
 
 The stylesheet must use the newer [expression](https://maplibre.org/maplibre-style-spec/expressions/) syntax; [legacy style functions](https://maplibre.org/maplibre-style-spec/deprecations/#function) are not supported. The stylesheet’s sources must conform to [Diplomat’s schema](#schema). Several popular vector tilesets already conform to this schema, including:
 
-* [OpenMapTiles](https://openmaptiles.org/schema/) implementations, e.g., [MapTiler](https://cloud.maptiler.com/tiles/v3-openmaptiles/), [OpenFreeMap](https://openfreemap.org/), and [OpenStreetMap U.S.](https://tiles.openstreetmap.us/vector/openmaptiles/)
-* [Tilezen](https://tilezen.readthedocs.io/en/latest/layers/) implementations, e.g., [Protomaps](https://protomaps.com/)
+- [OpenMapTiles](https://openmaptiles.org/schema/) implementations, e.g., [MapTiler](https://cloud.maptiler.com/tiles/v3-openmaptiles/), [OpenFreeMap](https://openfreemap.org/), and [OpenStreetMap U.S.](https://tiles.openstreetmap.us/vector/openmaptiles/)
+- [Tilezen](https://tilezen.readthedocs.io/en/latest/layers/) implementations, e.g., [Protomaps](https://protomaps.com/)
 
 ## Installation
 
@@ -32,7 +32,7 @@ Alternatively, you can include the plugin as a standalone script from a CDN such
 After creating an instance of `maplibregl.Map`, register an event listener for the `styledata` event that localizes the map:
 
 ```js
-map.once('styledata', (event) => {
+map.once("styledata", (event) => {
   // Prepare layers to be localized.
   map.setLayoutProperty(
     "country-labels",
@@ -61,7 +61,7 @@ map.once('styledata', (event) => {
 If you set the `hash` option to a string when creating the `Map`, you can have this code respond to a `language` parameter in the URL hash. Add a window event listener for whenever the hash changes, in order to update the layers:
 
 ```js
-addEventListener('hashchange', (event) => {
+addEventListener("hashchange", (event) => {
   let oldLanguage = maplibregl.Diplomat.getLanguageFromURL(
     new URL(event.oldURL)
   );
@@ -141,6 +141,26 @@ map.setLayoutProperty(
   "city-labels",
   "text-field",
   maplibregl.Diplomat.localizedNameWithGloss
+);
+```
+
+### `maplibregl.Diplomat.getCountryName()`
+
+Returns an expression that converts the given country code to a human-readable name in the user's preferred language.
+
+This method is useful for stylesheets powered by OpenMapTiles, which only provides the ISO&nbsp;3166-1 alpha-3 code of the country on either side of a boundary, but not the full country name in any language.
+
+Parameters:
+
+- **`code`** (`string`): An expression that evaluates to an ISO&nbsp;3166-1 alpha-3 country code.
+
+Example:
+
+```js
+map.setLayoutProperty(
+  "boundary-edge-labels",
+  "text-field",
+  getCountryName(["get", "adm0_l"])
 );
 ```
 
