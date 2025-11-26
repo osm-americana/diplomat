@@ -78,6 +78,9 @@ addEventListener('hashchange', (event) => {
 });
 ```
 
+> [!NOTE]
+> By default, MapLibre GL&nbsp;JS does not support bidirectional text. Arabic, Hebrew, and other right-to-left languages will be unreadable unless you [install the mapbox-gl-rtl-text plugin](https://maplibre.org/maplibre-gl-js/docs/examples/add-support-for-right-to-left-scripts/).
+
 ## Schema
 
 Diplomat can manipulate any GeoJSON or vector tile source, as long as it includes the following properties on each feature:
@@ -174,6 +177,8 @@ map.setStyle(style);
 ## Caveats
 
 Diplomat only switches between languages that are present in the stylesheet’s data sources. It does not fetch translations from other sources or generate its own transliterations. By convention, [OpenStreetMap’s coverage in some regions](https://wiki.openstreetmap.org/wiki/Multilingual_names) is largely limited to locally spoken languages. If you need more comprehensive coverage in a given language, consider using a tileset that combines names from OpenStreetMap and Wikidata, such as the [OpenStreetMap U.S. Tileservice](https://tiles.openstreetmap.us/vector/openmaptiles/).
+
+By default, MapLibre GL&nbsp;JS does not support bidirectional text. Arabic, Hebrew, and other right-to-left languages will be unreadable unless you [install the mapbox-gl-rtl-text plugin](https://maplibre.org/maplibre-gl-js/docs/examples/add-support-for-right-to-left-scripts/).
 
 Diplomat only performs basic language fallbacks according to the [ICU locale fallback algorithm](https://unicode-org.github.io/icu/userguide/locale/#fallback). It makes no attempt to fallback to a related but distinct language code, for example from `sr-Cyrl` to `ru` or from `nb` to `no`. Instead, the user can [set their preferred languages](https://www.w3.org/International/questions/qa-lang-priorities) in their browser or operating system settings.
 
