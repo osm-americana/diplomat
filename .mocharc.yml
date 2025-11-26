@@ -1,7 +1,0 @@
-recursive: true
-extension:
-  - ts
-spec:
-  - test/**/*.js
-  - test/**/*.spec.ts
-import: tsx

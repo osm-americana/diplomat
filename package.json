@@ -1,0 +1,46 @@
+{
+  "name": "@americana/diplomat",
+  "version": "0.1.0",
+  "description": "Internationalization plugin for MapLibre GL JS",
+  "keywords": [
+    "maplibre-gl-js",
+    "internationalization",
+    "internationalisation",
+    "i18n",
+    "localization",
+    "localisation",
+    "l10n",
+    "language",
+    "translation",
+    "bilingual"
+  ],
+  "homepage": "https://github.com/osm-americana/maplibre-gl-diplomat#readme",
+  "bugs": {
+    "url": "https://github.com/osm-americana/maplibre-gl-diplomat/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/osm-americana/maplibre-gl-diplomat.git"
+  },
+  "license": "CC0-1.0",
+  "author": "OpenStreetMap Americana contributors",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "build": "esbuild index.js --bundle --outdir=dist",
+    "clean": "shx rm -rf dist build",
+    "format": "prettier --write --list-different .",
+    "start": "shx cp -r example dist && open 'http://127.0.0.1:8000/example/#map=4/40.5/-94&language=got' && esbuild index.js --bundle --outdir=dist --servedir=dist --watch",
+    "test": "node --import ./test/setup.mjs --test 'index.spec.mjs'"
+  },
+  "peerDependencies": {
+    "maplibre-gl": "^5.13.0"
+  },
+  "devDependencies": {
+    "@maplibre/maplibre-gl-style-spec": "^24.3.1",
+    "esbuild": "0.25.3",
+    "open": "^11.0.0",
+    "prettier": "^2.3.2",
+    "shx": "^0.4.0"
+  }
+}
