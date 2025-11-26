@@ -29,7 +29,7 @@ addEventListener("load", () => {
           source: "openmaptiles",
           "source-layer": "place",
           layout: {
-            "text-field": maplibregl.Diplomat.localizedNameWithLocalGloss,
+            "text-field": ["get", "name"],
             "text-font": ["Americana-Bold"],
           },
         },
@@ -46,6 +46,11 @@ addEventListener("load", () => {
   );
 
   map.once("styledata", (event) => {
+    map.setLayoutProperty(
+      "place-labels",
+      "text-field",
+      maplibregl.Diplomat.localizedNameWithGloss
+    );
     let locales = maplibregl.Diplomat.getLocales();
     let style = map.getStyle();
     map.localizeLayers(style.layers, locales);
