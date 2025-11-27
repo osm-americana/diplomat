@@ -19,13 +19,13 @@ The stylesheet must use the newer [expression](https://maplibre.org/maplibre-sty
 
 ## Installation
 
-<!-- This plugin is available as [an NPM package](https://www.npmjs.com/package/@americana/diplomat). To install it, run the following command:
+This plugin is available as [an NPM package](https://www.npmjs.com/package/@americana/diplomat). To install it, run the following command:
 
 ```sh
 npm install @americana/diplomat
 ```
 
-Alternatively, you can include the plugin as a standalone script from a CDN such as [unpkg](https://unpkg.com/@americana/diplomat/index.js). -->
+Alternatively, you can include the plugin as a standalone script from a CDN such as [unpkg](https://unpkg.com/@americana/diplomat/index.js).
 
 ## Usage
 
