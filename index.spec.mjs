@@ -128,15 +128,35 @@ describe("getLocalizedNameExpression", function () {
     ]);
   });
   it("includes legacy fields", function () {
-    assert.deepEqual(getLocalizedNameExpression(["en-US", "en", "de"], true), [
-      "coalesce",
-      ["get", "name:en-US"],
-      ["get", "name:en"],
-      ["get", "name_en"],
-      ["get", "name:de"],
-      ["get", "name_de"],
-      ["get", "name"],
-    ]);
+    assert.deepEqual(
+      getLocalizedNameExpression(["en-US", "en", "de"], {
+        includesLegacyFields: true,
+      }),
+      [
+        "coalesce",
+        ["get", "name:en-US"],
+        ["get", "name:en"],
+        ["get", "name_en"],
+        ["get", "name:de"],
+        ["get", "name_de"],
+        ["get", "name"],
+      ],
+    );
+  });
+  it("uses the provided property formats", function () {
+    assert.deepEqual(
+      getLocalizedNameExpression(["en-US", "en", "de"], {
+        unlocalizedNameProperty: "moniker",
+        localizedNamePropertyFormat: "moniker($1)",
+      }),
+      [
+        "coalesce",
+        ["get", "moniker(en-US)"],
+        ["get", "moniker(en)"],
+        ["get", "moniker(de)"],
+        ["get", "moniker"],
+      ],
+    );
   });
 });
 

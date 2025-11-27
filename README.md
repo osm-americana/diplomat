@@ -14,8 +14,14 @@ Diplomat is compatible with applications using MapLibre GL&nbsp;JS v5.13.0 and a
 
 The stylesheet must use the newer [expression](https://maplibre.org/maplibre-style-spec/expressions/) syntax; [legacy style functions](https://maplibre.org/maplibre-style-spec/deprecations/#function) are not supported. The stylesheet’s sources must conform to [Diplomat’s schema](#schema). Several popular vector tilesets already conform to this schema, including:
 
-- [OpenMapTiles](https://openmaptiles.org/schema/) implementations, e.g., [MapTiler](https://cloud.maptiler.com/tiles/v3-openmaptiles/), [OpenFreeMap](https://openfreemap.org/), and [OpenStreetMap U.S.](https://tiles.openstreetmap.us/vector/openmaptiles/)
+- [OpenMapTiles](https://openmaptiles.org/schema/) implementations, e.g., [MapTiler](https://cloud.maptiler.com/tiles/v3-openmaptiles/), [OpenFreeMap](https://openfreemap.org/), [OpenStreetMap U.S.](https://tiles.openstreetmap.us/vector/openmaptiles/), [Stadia Maps](https://docs.stadiamaps.com/vector/))
 - [Tilezen](https://tilezen.readthedocs.io/en/latest/layers/) implementations, e.g., [Protomaps](https://protomaps.com/)
+
+With additional configuration, Diplomat supports even more vector tilesets, including:
+
+- [Mapbox Streets](https://docs.mapbox.com/data/tilesets/reference/mapbox-streets-v8/#names))
+- [OpenHistoricalMap](https://wiki.openstreetmap.org/wiki/OpenHistoricalMap/Reuse#Vector_tiles)
+- [Shortbread](https://shortbread-tiles.org/schema/): [OpenStreetMap.org](https://vector.openstreetmap.org/)
 
 ## Installation
 
@@ -58,6 +64,14 @@ map.once("styledata", (event) => {
 });
 ```
 
+If your stylesheet uses a tileset that formats the name keys differently, such as OpenHistoricalMap or Shortbread, set the format when localizing the layers, for example:
+
+```js
+map.localizeLayers(style.layers, locales, {
+  localizedNamePropertyFormat: "name_$1",
+});
+```
+
 If you set the `hash` option to a string when creating the `Map`, you can have this code respond to a `language` parameter in the URL hash. Add a window event listener for whenever the hash changes, in order to update the layers:
 
 ```js
@@ -85,10 +99,10 @@ addEventListener("hashchange", (event) => {
 
 Diplomat can manipulate any GeoJSON or vector tile source, as long as it includes the following properties on each feature:
 
-- **`name`** (`string`): The name in the local or official language.
-- **<code>name:<var>xyz</var></code>** (`string`): The name in another language, where <var>xyz</var> is a valid [IETF language tag](https://en.wikipedia.org/wiki/IETF_language_tag). For example, <code>name:zh</code> for Chinese, <code>name:zh-Hant</code> for Traditional Chinese, <code>name:zh-Hant-TW</code> for Traditional Chinese (Taiwan), and <code>name:zh-Latn-pinyin</code> for Chinese in pinyin.
+- **`name`** (`string`): The name in the local or official language. You can customize this property by setting the `unlocalizedNameProperty` option when calling [`maplibregl.Map.prototype.localizeLayers()`](#maplibreglmapprototypelocalizelayers).
+- **<code>name:<var>xyz</var></code>** (`string`): The name in another language, where <var>xyz</var> is a valid [IETF language tag](https://en.wikipedia.org/wiki/IETF_language_tag). For example, <code>name:zh</code> for Chinese, <code>name:zh-Hant</code> for Traditional Chinese, <code>name:zh-Hant-TW</code> for Traditional Chinese (Taiwan), and <code>name:zh-Latn-pinyin</code> for Chinese in pinyin. You can customize this format by setting the `localizedNamePropertyFormat` option when calling [`maplibregl.Map.prototype.localizeLayers()`](#maplibreglmapprototypelocalizelayers).
 
-For compatibility with the [OpenMapTiles](https://openmaptiles.org/schema/) schema, `name_en` and `name_de` are also recognized as alternatives to `name:en` and `name:de` for English and German, respectively, but only in the `transportation_name` layer. For performance reasons, this format is not supported for any other language or layer.
+For compatibility with the [OpenMapTiles](https://openmaptiles.org/schema/) schema, `name_en` and `name_de` are also recognized as alternatives to `name:en` and `name:de` for English and German, respectively, but only in the `transportation_name` layer. For performance reasons, Diplomat does not look for this format by default for any other language or layer.
 
 Each of the supported properties may be set to a list of values separated by [semicolons](https://wiki.openstreetmap.org/wiki/Semi-colon_value_separator). For example, if a place speaks both English and French, `name` should be `English Name;French Name`. Similarly, if a landmark has three equally common names in Spanish, regardless of dialect, `name:es` should be `Nombre Uno;Nombre Dos;Nombre Tres`. In the rare case that a single name contains a semicolon, it should be escaped as a double semicolon (`;;`).
 
@@ -182,6 +196,9 @@ Parameters:
 
 - **`layers`** (`[object]`): The style layers to localize.
 - **`locales`** (`[string]`): The locales to insert into each layer, as a comma-separated list of [IETF language tags](https://en.wikipedia.org/wiki/IETF_language_tag). Uses the `language` URL hash parameter or browser preferences by default.
+- **`options`** (`object`):
+  - **`unlocalizedNameProperty`** (`string`): The name of the property holding the unlocalized name. `name` by default.
+  - **`localizedNamePropertyFormat`** (`string`): "The format of properties holding localized names, where `$1` is replaced by an IETF language tag. `name:$1` by default.
 
 > [!NOTE]
 > This method modifies the `layers` structure in place. If it comes from the return value of [`maplibregl.Map.prototype.getStyle()`](https://maplibre.org/maplibre-gl-js/docs/API/classes/Map/#getstyle), you must manually synchronize the layers with the style afterwards by calling [`maplibregl.Map.prototype.setStyle()`](https://maplibre.org/maplibre-gl-js/docs/API/classes/Map/#setstyle).
@@ -190,7 +207,9 @@ Example:
 
 ```js
 const style = map.getStyle();
-map.localizeLayers(style.layers, locales);
+map.localizeLayers(style.layers, locales, {
+  localizedNamePropertyFormat: "name_$1",
+});
 map.setStyle(style);
 ```
 

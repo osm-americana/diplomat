@@ -45,21 +45,30 @@ export function getLocales() {
  * language that the user prefers.
  *
  * @param {[string]} locales - Locales of the name fields to include.
- * @param {boolean} includesLegacyFields - Whether to include the older fields
+ * @param {boolean} options.includesLegacyFields - Whether to include the older fields
  *  that include underscores, for layers that have not transitioned to the
  *  colon syntax.
+ * @param {string} options.unlocalizedNameProperty - The name of the property holding the unlocalized name.
+ * @param {string} options.localizedNamePropertyFormat - The format of properties holding localized names, where `$1` is replaced by an IETF language tag.
  */
-export function getLocalizedNameExpression(locales, includesLegacyFields) {
+export function getLocalizedNameExpression(locales, options = {}) {
   let nameFields = [
     ...locales.flatMap((l) => {
-      let fields = [`name:${l}`];
+      let localizedNamePropertyFormat =
+        options.localizedNamePropertyFormat || `name:$1`;
+      let localizedNameProperty = localizedNamePropertyFormat.replaceAll(
+        "$1",
+        l,
+      );
+      let fields = [localizedNameProperty];
       // transportation_label uses an underscore instead of a colon.
       // https://github.com/openmaptiles/openmaptiles/issues/769
-      if (includesLegacyFields && (l === "de" || l === "en"))
-        fields.push(`name_${l}`);
+      if (options.includesLegacyFields && (l === "de" || l === "en")) {
+        fields.push(localizedNameProperty.replaceAll(":", "_"));
+      }
       return fields;
     }),
-    "name",
+    options.unlocalizedNameProperty || "name",
   ];
   return ["coalesce", ...nameFields.map((f) => ["get", f])];
 }
@@ -89,10 +98,15 @@ const diacriticInsensitiveCollatorVariable = `${variablePrefix}__diacriticInsens
  *
  * @param {[object]} layers - The style layers to localize.
  * @param {[string]} locales - The locales to insert into each layer.
+ * @param {string} options.unlocalizedNameProperty - The name of the property holding the unlocalized name.
+ * @param {string} options.localizedNamePropertyFormat - The format of properties holding localized names, where `$1` is replaced by an IETF language tag.
  */
-export function localizeLayers(layers, locales = getLocales()) {
-  let localizedNameExpression = getLocalizedNameExpression(locales, false);
-  let legacyLocalizedNameExpression = getLocalizedNameExpression(locales, true);
+export function localizeLayers(layers, locales = getLocales(), options = {}) {
+  let localizedNameExpression = getLocalizedNameExpression(locales, options);
+  let legacyLocalizedNameExpression = getLocalizedNameExpression(locales, {
+    ...options,
+    includesLegacyFields: true,
+  });
 
   for (let layer of layers) {
     if ("layout" in layer && "text-field" in layer.layout) {
@@ -785,7 +799,11 @@ if (typeof window !== "undefined" && "maplibregl" in window) {
     localizedNameWithLocalGloss,
     updateVariable,
   };
-  maplibregl.Map.prototype.localizeLayers = function (layers, locales) {
-    localizeLayers(layers, locales);
+  maplibregl.Map.prototype.localizeLayers = function (
+    layers,
+    locales,
+    options = {},
+  ) {
+    localizeLayers(layers, locales, options);
   };
 }
