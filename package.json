@@ -24,6 +24,13 @@
   },
   "license": "CC0-1.0",
   "author": "OpenStreetMap Americana contributors",
+  "directories": {
+	"test": "test"
+  },
+  "files": [
+	"dist/",
+	"docs/"
+  ],
   "type": "module",
   "main": "index.js",
   "scripts": {
