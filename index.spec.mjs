@@ -213,9 +213,9 @@ describe("localizeLayers", function () {
         layout: {
           "text-field": [
             "let",
-            "maplibre_gl_diplomat__localizedCollator",
+            "diplomat__localizedCollator",
             "",
-            ["var", "maplibre_gl_diplomat__localizedCollator"],
+            ["var", "diplomat__localizedCollator"],
           ],
         },
       },
@@ -232,9 +232,9 @@ describe("localizeLayers", function () {
         layout: {
           "text-field": [
             "let",
-            "maplibre_gl_diplomat__diacriticInsensitiveCollator",
+            "diplomat__diacriticInsensitiveCollator",
             "",
-            ["var", "maplibre_gl_diplomat__diacriticInsensitiveCollator"],
+            ["var", "diplomat__diacriticInsensitiveCollator"],
           ],
         },
       },
@@ -251,9 +251,9 @@ describe("localizeLayers", function () {
         layout: {
           "text-field": [
             "let",
-            "maplibre_gl_diplomat__diacriticInsensitiveCollator",
+            "diplomat__diacriticInsensitiveCollator",
             "",
-            ["var", "maplibre_gl_diplomat__diacriticInsensitiveCollator"],
+            ["var", "diplomat__diacriticInsensitiveCollator"],
           ],
         },
       },
