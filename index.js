@@ -40,6 +40,8 @@ export function getLocales() {
   return locales;
 }
 
+const defaultUnlocalizedNameProperty = "name";
+
 /**
  * Returns a `coalesce` expression that resolves to the feature's name in a
  * language that the user prefers.
@@ -68,13 +70,13 @@ export function getLocalizedNameExpression(locales, options = {}) {
       }
       return fields;
     }),
-    options.unlocalizedNameProperty || "name",
+    options.unlocalizedNameProperty || defaultUnlocalizedNameProperty,
   ];
   return ["coalesce", ...nameFields.map((f) => ["get", f])];
 }
 
 /**
- * Replaces the value of a variable in the given `let` expression.
+ * Mutates a `let` expression to have a new value for the variable by the given name, binding the variable if it isn’t already bound to any value.
  *
  * @param {array} letExpr - Expression to update.
  * @param {string} variable - Name of the variable to set.
@@ -86,12 +88,140 @@ export function updateVariable(letExpr, variable, value) {
   let variableNameIndex = letExpr.indexOf(variable);
   if (variableNameIndex % 2 === 1) {
     letExpr[variableNameIndex + 1] = value;
+  } else {
+    letExpr.splice(-1, 0, variable, value);
   }
 }
 
 const localizedNameVariable = `${variablePrefix}__localizedName`;
 const localizedCollatorVariable = `${variablePrefix}__localizedCollator`;
 const diacriticInsensitiveCollatorVariable = `${variablePrefix}__diacriticInsensitiveCollator`;
+
+/**
+ * Recursively walks an expression, returning a copy of the subexpression after replacing any reference to a specific feature property with a new value in place.
+ *
+ * @param {array} expression - The expression to transform.
+ * @param {string} propertyName - The name of the feature property to look for.
+ * @param {*} replacement - The replacement value.
+ * @returns {array} The same array as `expression` if `expression` referred to `propertyName`, or `undefined` if `expression` did not refer to `propertyName`.
+ */
+export function replacePropertyReferences(
+  expression,
+  propertyName,
+  replacement,
+) {
+  if (!Array.isArray(expression) || expression[0] === "literal") return;
+  if (expression[0] === "get") {
+    if (expression.length === 2 && expression[1] === propertyName) {
+      return replacement;
+    }
+    return;
+  }
+  let didReplace = false;
+  expression.forEach((arg, idx) => {
+    if (!idx) return; // operator can never be a property reference
+    let newValue = replacePropertyReferences(arg, propertyName, replacement);
+    if (newValue !== undefined) {
+      expression[idx] = newValue;
+      didReplace = true;
+    }
+  });
+  if (didReplace) return expression;
+}
+
+/**
+ * The separator to use in inline contexts.
+ */
+const inlineSeparator = " \u2022 ";
+
+/**
+ * Transforms a layer’s `text-field` layout property so that it can be localized by `localizeLayers` later on.
+ *
+ * The transformed `text-field` property is only modified if it contains a reference to the feature property specified by `unlocalizedNameProperty`. If the layer’s `symbol-placement` layout property is set to either `line` or `line-center`, the resulting text field takes up only one line. Otherwise, the text field for a given feature may span multiple lines if its unlocalized name property is set to a list of values.
+ *
+ * This function does not introduce any dual language labels. To label features with both the user’s preferred name and the local name simultaneously, pass the layer ID, `text-field`, and `localizedNameWithLocalGloss` into `maplibregl.Map.prototype.setLayoutProperty`.
+ *
+ * @param {object} layer - The style layer to prepare for localization.
+ * @param {string} unlocalizedNameProperty - The name of the feature property that holds the unlocalized name. References to this property are replaced by a more complex expression that can be localized dynamically.
+ */
+export function prepareLayer(layer, unlocalizedNameProperty) {
+  let textField = layer.layout && layer.layout["text-field"];
+  if (
+    !textField ||
+    (textField[0] === "let" && textField.includes(localizedNameVariable))
+  ) {
+    return;
+  }
+
+  let symbolPlacement = layer.layout && layer.layout["symbol-placement"];
+  let isInline =
+    symbolPlacement === "line" || symbolPlacement === "line-center";
+  let separator = isInline ? inlineSeparator : "\n";
+  let listValues = listValuesExpression(
+    ["var", localizedNameVariable],
+    separator,
+  );
+  let newTextField = replacePropertyReferences(
+    textField,
+    unlocalizedNameProperty || defaultUnlocalizedNameProperty,
+    listValues,
+  );
+  if (newTextField !== undefined) {
+    layer.layout["text-field"] = [
+      "let",
+      localizedNameVariable,
+      "",
+      newTextField,
+    ];
+  }
+}
+
+/**
+ * Updates localizable variables at the top level of the layer's `text-field` expression based on the given locales.
+ *
+ * @param {object} layer - The style layer to localize.
+ * @param {string} collationLocale - The locale for string comparison purposes.
+ * @param {array} localizedNameExpression - An expression that produces a localized name.
+ * @param {array} legacyLocalizedNameExpression - An expression that produces a localized name based on legacy properties in OpenMapTiles.
+ */
+function localizeLayer(
+  layer,
+  collationLocale,
+  localizedNameExpression,
+  legacyLocalizedNameExpression,
+) {
+  if (!("layout" in layer) || !("text-field" in layer.layout)) return;
+
+  let textField = layer.layout["text-field"];
+
+  updateVariable(
+    textField,
+    localizedNameVariable,
+    // https://github.com/openmaptiles/openmaptiles/issues/769
+    layer["source-layer"] === "transportation_name"
+      ? legacyLocalizedNameExpression
+      : localizedNameExpression,
+  );
+
+  updateVariable(textField, localizedCollatorVariable, [
+    "collator",
+    {
+      "case-sensitive": false,
+      "diacritic-sensitive": true,
+      locale: collationLocale,
+    },
+  ]);
+
+  // Only perform diacritic folding in English. English normally uses few diacritics except when labeling foreign place names on maps.
+  updateVariable(textField, diacriticInsensitiveCollatorVariable, [
+    "collator",
+    {
+      "case-sensitive": false,
+      "diacritic-sensitive": !/^en\b/.test(collationLocale),
+      locale: collationLocale,
+    },
+  ]);
+}
 
 /**
  * Updates localizable variables at the top level of each layer's `text-field` expression based on the given locales.
@@ -107,57 +237,14 @@ export function localizeLayers(layers, locales = getLocales(), options = {}) {
     ...options,
     includesLegacyFields: true,
   });
-
   for (let layer of layers) {
-    if ("layout" in layer && "text-field" in layer.layout) {
-      let textField = layer.layout["text-field"];
-
-      updateVariable(
-        textField,
-        localizedNameVariable,
-        // https://github.com/openmaptiles/openmaptiles/issues/769
-        layer["source-layer"] === "transportation_name"
-          ? legacyLocalizedNameExpression
-          : localizedNameExpression,
-      );
-
-      updateVariable(textField, localizedCollatorVariable, [
-        "collator",
-        {
-          "case-sensitive": false,
-          "diacritic-sensitive": true,
-          locale: locales[0],
-        },
-      ]);
-
-      // Only perform diacritic folding in English. English normally uses few diacritics except when labeling foreign place names on maps.
-      updateVariable(textField, diacriticInsensitiveCollatorVariable, [
-        "collator",
-        {
-          "case-sensitive": false,
-          "diacritic-sensitive": !/^en\b/.test(locales[0]),
-          locale: locales[0],
-        },
-      ]);
-    }
+    localizeLayer(
+      layer,
+      locales[0],
+      localizedNameExpression,
+      legacyLocalizedNameExpression,
+    );
   }
-
-  let countryNames = new Intl.DisplayNames(locales, {
-    type: "region",
-    fallback: "none",
-  });
-  let localizedCountryNamesByCode = Object.fromEntries(
-    Object.entries(iso3166_1_alpha_2_by_3).map((e) => [
-      e[0],
-      countryNames
-        .of(e[1])
-        // Neither the upcase expression operator nor the text-transform layout property is locale-aware, so uppercase the name upfront.
-        ?.toLocaleUpperCase(locales)
-        // Word boundaries are less discernible in uppercase text, so pad each word by an additional space.
-        .replaceAll(" ", "  ") ?? null,
-    ]),
-  );
-  Object.assign(countryNamesByCode, localizedCountryNamesByCode);
 }
 
 /**
@@ -344,11 +431,6 @@ export const localizedName = [
   "",
   listValuesExpression(["var", localizedNameVariable], "\n"),
 ];
-
-/**
- * The separator to use in inline contexts.
- */
-const inlineSeparator = " \u2022 ";
 
 /**
  * The names in the user's preferred language, all on the same line.
@@ -781,29 +863,127 @@ const iso3166_1_alpha_2_by_3 = {
   ZWE: "ZW",
 };
 
+const countryNamesByCodeVariable = `${variablePrefix}__countryNamesByCode`;
+
 /**
- * Country names in the user's preferred language by ISO 3166-1 alpha-3 code.
+ * Returns a table of country names in the user’s preferred language by ISO 3166-1 alpha-3 code.
+ *
+ * @param {[string]} locales - The locales for formatting the country names.
+ * @param {boolean} options.uppercase Whether to write the country names in all uppercase, respecting the locale’s case conventions.
  */
-export let countryNamesByCode = {};
+export function getLocalizedCountryNames(locales, options = {}) {
+  let countryNames = new Intl.DisplayNames(locales, {
+    type: "region",
+    fallback: "none",
+  });
+  return Object.fromEntries(
+    Object.entries(iso3166_1_alpha_2_by_3).map((e) => {
+      let name = countryNames.of(e[1]);
+      if (name && options?.uppercase) {
+        // Neither the upcase expression operator nor the text-transform layout property is locale-aware, so uppercase the name upfront.
+        name = name
+          .toLocaleUpperCase(locales)
+          // Word boundaries are less discernible in uppercase text, so pad each word by an additional space.
+          .replaceAll(" ", "  ");
+      }
+      return [e[0], name];
+    }),
+  );
+}
+
+/**
+ * Returns the global state that Diplomat needs to fully localize the style.
+ *
+ * @param {[string]} locales - The locales for formatting the country names.
+ * @param {boolean} options.uppercaseCountryNames Whether to write country names in all uppercase, respecting the locale’s case conventions.
+ */
+export function getGlobalStateForLocalization(locales, options = {}) {
+  let state = {};
+  state[countryNamesByCodeVariable] = getLocalizedCountryNames(locales, {
+    uppercase: options?.uppercaseCountryNames,
+  });
+  return state;
+}
+
+/**
+ * Returns an expression that converts the given country code to a human-readable name in the user's preferred language.
+ *
+ * @param {array} code An expression that evaluates to an ISO 3166-1 alpha-3 country code.
+ */
+export function getLocalizedCountryNameExpression(code) {
+  return [
+    "let",
+    "code",
+    code,
+    [
+      "coalesce",
+      [
+        "get",
+        ["var", "code"],
+        [
+          "coalesce",
+          ["global-state", countryNamesByCodeVariable],
+          ["literal", {}],
+        ],
+      ],
+      // Fall back to the country code in parentheses.
+      ["concat", "(", ["var", "code"], ")"],
+    ],
+  ];
+}
 
 if (typeof window !== "undefined" && "maplibregl" in window) {
   maplibregl.Diplomat = {
-    countryNamesByCode,
+    getGlobalStateForLocalization,
     getLanguageFromURL,
     getLocales,
-    getLocalizedNameExpression,
+    getLocalizedCountryNameExpression,
     listValuesExpression,
     localizeLayers,
     localizedName,
     localizedNameInline,
     localizedNameWithLocalGloss,
-    updateVariable,
   };
-  maplibregl.Map.prototype.localizeLayers = function (
-    layers,
-    locales,
+
+  /**
+   * Updates each style layer's `text-field` value to match the given locales, upgrading any unlocalizable layer along the way.
+   *
+   * This method ugprades unlocalizable layers to localized multiline or inline labels depending on the `symbol-placement` layout property. To add a dual language label to a layer, set its `text-field` layout property manually using the `localizedNameWithLocalGloss` constant.
+   *
+   * @param {[string]} locales - The locales to insert into each layer.
+   * @param {[string]} options.layers - If specified, only these style layers will be made localizable. Otherwise, any style layer that uses the unlocalized name property will be made localizable.
+   * @param {string} options.unlocalizedNameProperty - The name of the property holding the unlocalized name.
+   * @param {string} options.localizedNamePropertyFormat - The format of properties holding localized names, where `$1` is replaced by an IETF language tag.
+   * @param {boolean} options.uppercaseCountryNames Whether to write country names in all uppercase, respecting the locale’s case conventions.
+   */
+  maplibregl.Map.prototype.localizeStyle = function (
+    locales = getLocales(),
     options = {},
   ) {
-    localizeLayers(layers, locales, options);
+    let style = this.getStyle();
+
+    let localizedNameExpression = getLocalizedNameExpression(locales, options);
+    let legacyLocalizedNameExpression = getLocalizedNameExpression(locales, {
+      ...options,
+      includesLegacyFields: true,
+    });
+
+    let layers = options.layers?.map((n) => style.layers[n]) || style.layers;
+    for (let layer of layers) {
+      prepareLayer(layer, options?.unlocalizedNameProperty);
+      localizeLayer(
+        layer,
+        locales[0],
+        localizedNameExpression,
+        legacyLocalizedNameExpression,
+      );
+    }
+
+    let countryNames = getLocalizedCountryNames(locales, {
+      uppercase: options?.uppercaseCountryNames,
+    });
+    this.setGlobalStateProperty(countryNamesByCodeVariable, countryNames);
+
+    this.setStyle(style);
   };
 }

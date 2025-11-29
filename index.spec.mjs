@@ -1,14 +1,17 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import {
-  countryNamesByCode,
+  getGlobalStateForLocalization,
   getLanguageFromURL,
   getLocales,
+  getLocalizedCountryNameExpression,
+  getLocalizedCountryNames,
   getLocalizedNameExpression,
   listValuesExpression,
   localizeLayers,
   localizedName,
   localizedNameWithLocalGloss,
+  replacePropertyReferences,
   updateVariable,
 } from "./index.js";
 import { expression } from "@maplibre/maplibre-gl-style-spec";
@@ -186,10 +189,106 @@ describe("updateVariable", function () {
       ["get", "fore"],
     ]);
   });
+  it("inserts a variable that isn’t already present", function () {
+    let expr = ["let", "one", "won", ["get", "too"]];
+    updateVariable(expr, "two", "too");
+    assert.deepEqual(expr, ["let", "one", "won", "two", "too", ["get", "too"]]);
+  });
   it("avoids updating non-let expressions", function () {
     let expr = ["get", "fore"];
     updateVariable(expr, "fore", 4);
     assert.deepEqual(expr, ["get", "fore"]);
+  });
+});
+
+describe("replacePropertyReferences", function () {
+  it("ignores non-expressions", function () {
+    assert.strictEqual(
+      replacePropertyReferences(undefined, "name", 1),
+      undefined,
+    );
+    assert.strictEqual(replacePropertyReferences(null, "name", 1), undefined);
+    assert.strictEqual(replacePropertyReferences(true, "name", 1), undefined);
+    assert.strictEqual(replacePropertyReferences(1, "name", 1), undefined);
+    assert.strictEqual(replacePropertyReferences("name", "name", 1), undefined);
+    assert.strictEqual(replacePropertyReferences({}, "name", 1), undefined);
+    assert.strictEqual(
+      replacePropertyReferences({ name: 0 }, "name", 1),
+      undefined,
+    );
+  });
+  it("ignores literal expressions", function () {
+    assert.strictEqual(
+      replacePropertyReferences(["literal", ["get", "name"]], "name", 1),
+      undefined,
+    );
+    assert.strictEqual(
+      replacePropertyReferences(
+        ["literal", { get: ["get", "name"] }],
+        "name",
+        1,
+      ),
+      undefined,
+    );
+  });
+  it("ignores within expressions", function () {
+    assert.strictEqual(
+      replacePropertyReferences(
+        [
+          "within",
+          {
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature",
+                geometry: { type: "Point", coordinates: [0, 0] },
+                properties: { name: "name" },
+              },
+            ],
+            metadata: ["get", "name"],
+          },
+        ],
+        "name",
+        1,
+      ),
+      undefined,
+    );
+  });
+  it("recurses into compound expressions", function () {
+    assert.deepEqual(
+      replacePropertyReferences(
+        ["coalesce", ["get", "nom"], ["get", "nom"]],
+        "name",
+        1,
+      ),
+      undefined,
+    );
+    assert.deepEqual(
+      replacePropertyReferences(
+        ["coalesce", ["get", "name"], ["get", "name"]],
+        "name",
+        1,
+      ),
+      ["coalesce", 1, 1],
+    );
+  });
+  it("ignores get expressions that look up properties ", function () {
+    assert.deepEqual(
+      replacePropertyReferences(
+        ["coalesce", ["get", "nom"], ["get", "nom"]],
+        "name",
+        1,
+      ),
+      undefined,
+    );
+    assert.deepEqual(
+      replacePropertyReferences(
+        ["coalesce", ["get", "name"], ["get", "name"]],
+        "name",
+        1,
+      ),
+      ["coalesce", 1, 1],
+    );
   });
 });
 
@@ -285,30 +384,12 @@ describe("localizeLayers", function () {
     localizeLayers(layers, ["enm"]);
     assert.ok(layers[0].layout["text-field"][2][1]["diacritic-sensitive"]);
   });
-  it("updates country names in English", function () {
-    localizeLayers([], ["en-US"]);
-    assert(Object.keys(countryNamesByCode).length >= 200);
-    assert.strictEqual(countryNamesByCode.MEX, "MEXICO");
-  });
-  it("updates country names in a language other than English", function () {
-    localizeLayers([], ["eo"]);
-    assert(Object.keys(countryNamesByCode).length >= 200);
-    assert.strictEqual(countryNamesByCode.USA, "USONO");
-  });
-  it("widens spaces", function () {
-    localizeLayers([], ["en-US"]);
-    assert.strictEqual(countryNamesByCode.USA, "UNITED  STATES");
-  });
-  it("returns undefined for a nonexistent country", function () {
-    localizeLayers([], ["en-US"]);
-    assert.equal(countryNamesByCode.UNO, undefined);
-  });
 });
 
 describe("localizedName", function () {
   let evaluatedExpression = (locales, properties) =>
     expression
-      .createExpression(localizedTextField([...localizedName], ["en"]))
+      .createExpression(localizedTextField([...localizedName], locales))
       .value.expression.evaluate(expressionContext(properties));
 
   it("is empty by default", function () {
@@ -576,6 +657,80 @@ describe("listValuesExpression", function () {
     assert.strictEqual(
       evaluatedExpression("ABC;DEF;GHI", ", ", "GHI"),
       "ABC, DEF",
+    );
+  });
+});
+
+describe("getLocalizedCountryNames", function () {
+  it("returns country names in English", function () {
+    let countryNames = getLocalizedCountryNames(["en-US"]);
+    assert(Object.keys(countryNames).length >= 200);
+    assert.strictEqual(countryNames.MEX, "Mexico");
+  });
+  it("returns country names in a language other than English", function () {
+    let countryNames = getLocalizedCountryNames(["eo"]);
+    assert(Object.keys(countryNames).length >= 200);
+    assert.strictEqual(countryNames.USA, "Usono");
+  });
+  it("uppercases country names", function () {
+    let countryNames = getLocalizedCountryNames(["en-US"], { uppercase: true });
+    assert.strictEqual(countryNames.MEX, "MEXICO");
+  });
+  it("widens spaces in uppercase", function () {
+    let countryNames = getLocalizedCountryNames(["en-US"], { uppercase: true });
+    assert.strictEqual(countryNames.USA, "UNITED  STATES");
+  });
+  it("returns undefined for a nonexistent country", function () {
+    let countryNames = getLocalizedCountryNames(["en-US"]);
+    assert.strictEqual(countryNames.UNO, undefined);
+  });
+});
+
+describe("getGlobalStateForLocalization", function () {
+  it("includes localized country names", function () {
+    assert(
+      Object.keys(
+        getGlobalStateForLocalization(["en-US"]).diplomat__countryNamesByCode,
+      ).length >= 200,
+    );
+  });
+});
+
+describe("getLocalizedCountryNameExpression", function () {
+  let evaluatedExpression = (properties, globalState) =>
+    expression
+      .createExpression(
+        [...getLocalizedCountryNameExpression(["get", "adm1_l"])],
+        "string",
+        globalState,
+      )
+      .value.evaluate({ globalState }, { properties });
+
+  it("is the country code by default", function () {
+    assert.strictEqual(
+      expression
+        .createExpression(getLocalizedCountryNameExpression(["get", "adm1_r"]))
+        .value.expression.evaluate(
+          expressionContext({
+            adm1_l: "CAN",
+            adm1_r: "FRA",
+          }),
+        ),
+      "(FRA)",
+    );
+  });
+  it("localizes to preferred language", function () {
+    assert.strictEqual(
+      evaluatedExpression(
+        {
+          adm1_l: "CAN",
+          adm1_r: "FRA",
+        },
+        {
+          diplomat__countryNamesByCode: { CAN: "🇨🇦", FRA: "🇫🇷" },
+        },
+      ),
+      "🇨🇦",
     );
   });
 });

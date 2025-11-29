@@ -39,36 +39,18 @@ After creating an instance of `maplibregl.Map`, register an event listener for t
 
 ```js
 map.once("styledata", (event) => {
-  // Prepare layers to be localized.
-  map.setLayoutProperty(
-    "country-labels",
-    "text-field",
-    maplibregl.Diplomat.localizedName,
-  );
-  map.setLayoutProperty(
-    "city-labels",
-    "text-field",
-    maplibregl.Diplomat.localizedNameWithGloss,
-  );
-  map.setLayoutProperty(
-    "road-labels",
-    "text-field",
-    maplibregl.Diplomat.localizedNameInline,
-  );
-
-  // Localize the layers.
-  const locales = maplibregl.Diplomat.getLocales();
-  const style = map.getStyle();
-  map.localizeLayers(style.layers, locales);
-  map.setStyle(style);
+  map.localizeStyle();
 });
 ```
 
 If your stylesheet uses a tileset that formats the name keys differently, such as OpenHistoricalMap or Shortbread, set the format when localizing the layers, for example:
 
 ```js
-map.localizeLayers(style.layers, locales, {
-  localizedNamePropertyFormat: "name_$1",
+map.once("styledata", (event) => {
+  let locales = maplibregl.Diplomat.getLocales();
+  map.localizeStyle(locales, {
+    localizedNamePropertyFormat: "name_$1",
+  });
 });
 ```
 
@@ -84,11 +66,16 @@ addEventListener("hashchange", (event) => {
   );
 
   if (oldLanguage !== newLanguage) {
-    let locales = maplibregl.Diplomat.getLocales();
-    let style = map.getStyle();
-    map.localizeLayers(style.layers, locales);
-    map.setStyle(style);
+    map.localizeStyle();
   }
+});
+```
+
+Similarly, you can immediately respond to any change the user makes to their browser language preference in real time:
+
+```js
+addEventListener("languagechange", (event) => {
+  map.localizeStyle();
 });
 ```
 
@@ -99,8 +86,8 @@ addEventListener("hashchange", (event) => {
 
 Diplomat can manipulate any GeoJSON or vector tile source, as long as it includes the following properties on each feature:
 
-- **`name`** (`string`): The name in the local or official language. You can customize this property by setting the `unlocalizedNameProperty` option when calling [`maplibregl.Map.prototype.localizeLayers()`](#maplibreglmapprototypelocalizelayers).
-- **<code>name:<var>xyz</var></code>** (`string`): The name in another language, where <var>xyz</var> is a valid [IETF language tag](https://en.wikipedia.org/wiki/IETF_language_tag). For example, <code>name:zh</code> for Chinese, <code>name:zh-Hant</code> for Traditional Chinese, <code>name:zh-Hant-TW</code> for Traditional Chinese (Taiwan), and <code>name:zh-Latn-pinyin</code> for Chinese in pinyin. You can customize this format by setting the `localizedNamePropertyFormat` option when calling [`maplibregl.Map.prototype.localizeLayers()`](#maplibreglmapprototypelocalizelayers).
+- **`name`** (`string`): The name in the local or official language. You can customize this property by setting the `unlocalizedNameProperty` option when calling [`maplibregl.Map.prototype.localizeStyle()`](#maplibreglmapprototypelocalizestyle).
+- **<code>name:<var>xyz</var></code>** (`string`): The name in another language, where <var>xyz</var> is a valid [IETF language tag](https://en.wikipedia.org/wiki/IETF_language_tag). For example, <code>name:zh</code> for Chinese, <code>name:zh-Hant</code> for Traditional Chinese, <code>name:zh-Hant-TW</code> for Traditional Chinese (Taiwan), and <code>name:zh-Latn-pinyin</code> for Chinese in pinyin. You can customize this format by setting the `localizedNamePropertyFormat` option when calling [`maplibregl.Map.prototype.localizeStyle()`](#maplibreglmapprototypelocalizestyle).
 
 For compatibility with the [OpenMapTiles](https://openmaptiles.org/schema/) schema, `name_en` and `name_de` are also recognized as alternatives to `name:en` and `name:de` for English and German, respectively, but only in the `transportation_name` layer. For performance reasons, Diplomat does not look for this format by default for any other language or layer.
 
@@ -113,6 +100,8 @@ This plugin adds several constants to a `maplibregl.Diplomat` namespace and adds
 ### `maplibregl.Diplomat.localizedName`
 
 An expression that produces the names in the user's preferred language, each on a separate line.
+
+Use this constant if you are building the entire stylesheet programmatically before initializing a `maplibregl.Map` and want more fine-grained control over which layers have which label layout than [`maplibregl.Map.prototype.localizeStyle()`](#maplibreglmapprototypelocalizestyle) provides.
 
 This expression is appropriate for labeling a type of feature that almost always has a familiar translation in the user’s preferred language, such as the name of a country. It is also appropriate for minor features like points of interest, for which an extra local-language gloss would clutter the map.
 
@@ -130,6 +119,8 @@ map.setLayoutProperty(
 
 An expression that produces the names in the user's preferred language, all on the same line.
 
+Use this constant if you are building the entire stylesheet programmatically before initializing a `maplibregl.Map` and want more fine-grained control over which layers have which label layout than [`maplibregl.Map.prototype.localizeStyle()`](#maplibreglmapprototypelocalizestyle) provides.
+
 This expression is appropriate for labeling a linear feature, such as a road or waterway. The symbol layer’s [`symbol-placement`](https://maplibre.org/maplibre-style-spec/layers/#symbol-placement) layout property should be set to either `line` or `line-center`.
 
 Example:
@@ -146,6 +137,8 @@ map.setLayoutProperty(
 
 An expression that produces the name in the user's preferred language, followed by the name in the local language in parentheses if it differs.
 
+Use this constant if you are building the entire stylesheet programmatically before initializing a `maplibregl.Map` and want more fine-grained control over which layers have which label layout than [`maplibregl.Map.prototype.localizeStyle()`](#maplibreglmapprototypelocalizestyle) provides.
+
 This expression is appropriate for labeling a type of feature that is only sometimes translated into user’s preferred language, such as the name of a city or town. The extra local-language gloss respects local customs and keeps the user informed, but it can also risk [information overload](https://en.wikipedia.org/wiki/Information_overload) and crowd out other useful labels.
 
 Example:
@@ -158,7 +151,7 @@ map.setLayoutProperty(
 );
 ```
 
-### `maplibregl.Diplomat.getCountryName()`
+### `maplibregl.Diplomat.getLocalizedCountryNameExpression()`
 
 Returns an expression that converts the given country code to a human-readable name in the user's preferred language.
 
@@ -174,8 +167,30 @@ Example:
 map.setLayoutProperty(
   "boundary-edge-labels",
   "text-field",
-  getCountryName(["get", "adm0_l"]),
+  maplibregl.Diplomat.getLocalizedCountryNameExpression(["get", "adm0_l"]),
 );
+```
+
+> [!NOTE]
+> Use [`maplibregl.Diplomat.getGlobalStateForLocalization()`](#maplibregldiplomatgetglobalstateforlocalization) to populate the global state required by this expression, then call [`maplibregl.Map.prototype.localizeStyle()`](#maplibreglmapprototypelocalizestyle). Otherwise, this expression evaluates to the raw country code.
+
+### `maplibregl.Diplomat.getGlobalStateForLocalization()`
+
+Returns the global state that Diplomat needs to fully localize the style.
+
+If you are building a stylesheet programmatically, you can use this method to populate a `state` property at the root of the stylesheet before initializing a `maplibregl.Map`. You can add additional global state properties besides the ones that come from this object, as long as you avoid making a deep clone of the object.
+
+If your stylesheet is powered by OpenMapTiles, you need to set this global state object in order to localizing boundary edge labels that come from the [`boundary`](https://openmaptiles.org/schema/#boundary) layer. Otherwise, the user will see only ISO&nbsp;3166-1 alpha-3 codes, because OpenMapTiles only provides these codes instead of the full country name on either side of a boundary.
+
+Parameters:
+
+- **`locales`** (`string`): The locales for formatting the country names.
+- **`options.uppercaseCountryNames`** (`boolean`): Whether to write the country names in all uppercase, respecting the locale’s case conventions. Enable this option if you intend to display the boundary edge labels in uppercase, because the `upcase` expression operator is locale-insensitive.
+
+Example:
+
+```js
+style.state = maplibregl.getGlobalStateForLocalization(locales, { uppercaseCountryNames: true }),
 ```
 
 ### `maplibregl.Diplomat.getLocales()`
@@ -188,9 +203,11 @@ Example:
 maplibregl.Diplomat.getLocales().includes("en");
 ```
 
-### `maplibregl.Map.prototype.localizeLayers()`
+### `maplibregl.Map.prototype.localizeStyle()`
 
-Updates localizable variables at the top level of each layer's `text-field` expression based on the given locales.
+Updates each style layer's `text-field` value to match the given locales, upgrading any unlocalizable layer along the way.
+
+This method ugprades unlocalizable layers to localized multiline or inline labels depending on the `symbol-placement` layout property. To add a dual language label to a layer, set its `text-field` layout property manually using the [`maplibregl.Diplomat.localizedNameWithLocalGloss`](#maplibrediplomatlocalizednamewithlocalgloss) constant.
 
 Parameters:
 
@@ -199,18 +216,14 @@ Parameters:
 - **`options`** (`object`):
   - **`unlocalizedNameProperty`** (`string`): The name of the property holding the unlocalized name. `name` by default.
   - **`localizedNamePropertyFormat`** (`string`): "The format of properties holding localized names, where `$1` is replaced by an IETF language tag. `name:$1` by default.
-
-> [!NOTE]
-> This method modifies the `layers` structure in place. If it comes from the return value of [`maplibregl.Map.prototype.getStyle()`](https://maplibre.org/maplibre-gl-js/docs/API/classes/Map/#getstyle), you must manually synchronize the layers with the style afterwards by calling [`maplibregl.Map.prototype.setStyle()`](https://maplibre.org/maplibre-gl-js/docs/API/classes/Map/#setstyle).
+  - **`options.uppercaseCountryNames`** (`boolean`): Whether to write country names in all uppercase, respecting the locale’s case conventions.
 
 Example:
 
 ```js
-const style = map.getStyle();
-map.localizeLayers(style.layers, locales, {
+map.localizeStyle(["eo"], {
   localizedNamePropertyFormat: "name_$1",
 });
-map.setStyle(style);
 ```
 
 ## Caveats
