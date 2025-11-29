@@ -190,7 +190,17 @@ Parameters:
 Example:
 
 ```js
-style.state = maplibregl.getGlobalStateForLocalization(locales, { uppercaseCountryNames: true }),
+map.once("styledata", (event) => {
+  let localizationState = maplibregl.Diplomat.getGlobalStateForLocalization(
+    getLocales(),
+    {
+      uppercaseCountryNames: true,
+    },
+  );
+  for (let [key, value] of Object.entries(localizationState)) {
+    map.setGlobalStateProperty(key, value);
+  }
+});
 ```
 
 ### `maplibregl.Diplomat.getLocales()`
