@@ -25,12 +25,49 @@ addEventListener("load", () => {
         },
         {
           type: "symbol",
+          id: "waterway-labels",
+          source: "openmaptiles",
+          "source-layer": "water_name",
+          filter: ["==", ["geometry-type"], "LineString"],
+          layout: {
+            "symbol-placement": "line",
+            "text-field": ["get", "name"],
+            "text-font": ["Americana-Italic"],
+          },
+        },
+        {
+          type: "symbol",
+          id: "waterbody-labels",
+          source: "openmaptiles",
+          "source-layer": "water_name",
+          filter: ["!=", ["geometry-type"], "LineString"],
+          layout: {
+            "text-field": ["get", "name"],
+            "text-font": ["Americana-Italic"],
+          },
+        },
+        {
+          type: "symbol",
           id: "place-labels",
           source: "openmaptiles",
           "source-layer": "place",
           layout: {
             "text-field": ["get", "name"],
             "text-font": ["Americana-Bold"],
+          },
+        },
+        {
+          type: "symbol",
+          id: "boundary-edge-labels",
+          source: "openmaptiles",
+          "source-layer": "boundary",
+          layout: {
+            "symbol-placement": "line",
+            "text-field": maplibregl.Diplomat.getLocalizedCountryNameExpression(
+              ["get", "adm0_l"],
+            ),
+            "text-font": ["Americana"],
+            "text-size": 10,
           },
         },
       ],
@@ -51,10 +88,9 @@ addEventListener("load", () => {
       "text-field",
       maplibregl.Diplomat.localizedNameWithLocalGloss,
     );
-    let locales = maplibregl.Diplomat.getLocales();
-    let style = map.getStyle();
-    map.localizeLayers(style.layers, locales);
-    map.setStyle(style);
+    map.localizeStyle(maplibregl.Diplomat.getLocales(), {
+      uppercaseCountryNames: true,
+    });
   });
 
   addEventListener("hashchange", (event) => {
@@ -65,11 +101,9 @@ addEventListener("load", () => {
       new URL(event.newURL),
     );
     if (oldLanguage !== newLanguage) {
-      let locales = maplibregl.Diplomat.getLocales();
-      console.log(`Changed to ${locales}`);
-      let style = map.getStyle();
-      map.localizeLayers(style.layers, locales);
-      map.setStyle(style);
+      map.localizeStyle(maplibregl.Diplomat.getLocales(), {
+        uppercaseCountryNames: true,
+      });
     }
   });
 });
