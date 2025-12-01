@@ -35,11 +35,17 @@ Alternatively, you can include the plugin as a standalone script from a CDN such
 
 ## Usage
 
+Import Diplomat as a module:
+
+```js
+import * as Diplomat from "@americana/diplomat";
+```
+
 After creating an instance of `maplibregl.Map`, register an event listener for the `styledata` event that localizes the map:
 
 ```js
 map.once("styledata", (event) => {
-  map.localizeStyle();
+  Diplomat.localizeStyle(map);
 });
 ```
 
@@ -47,8 +53,8 @@ If your stylesheet uses a tileset that formats the name keys differently, such a
 
 ```js
 map.once("styledata", (event) => {
-  let locales = maplibregl.Diplomat.getLocales();
-  map.localizeStyle(locales, {
+  let locales = Diplomat.getLocales();
+  Diplomat.localizeStyle(map, locales, {
     localizedNamePropertyFormat: "name_$1",
   });
 });
@@ -58,15 +64,11 @@ If you set the `hash` option to a string when creating the `Map`, you can have t
 
 ```js
 addEventListener("hashchange", (event) => {
-  let oldLanguage = maplibregl.Diplomat.getLanguageFromURL(
-    new URL(event.oldURL),
-  );
-  let newLanguage = maplibregl.Diplomat.getLanguageFromURL(
-    new URL(event.newURL),
-  );
+  let oldLanguage = Diplomat.getLanguageFromURL(new URL(event.oldURL));
+  let newLanguage = Diplomat.getLanguageFromURL(new URL(event.newURL));
 
   if (oldLanguage !== newLanguage) {
-    map.localizeStyle();
+    Diplomat.localizeStyle(map);
   }
 });
 ```
@@ -75,7 +77,7 @@ Similarly, you can immediately respond to any change the user makes to their bro
 
 ```js
 addEventListener("languagechange", (event) => {
-  map.localizeStyle();
+  Diplomat.localizeStyle(map);
 });
 ```
 
@@ -95,7 +97,7 @@ Each of the supported properties may be set to a list of values separated by [se
 
 ## API
 
-This plugin adds several constants to a `maplibregl.Diplomat` namespace and adds a single method to each instance of `maplibregl.Map`.
+This plugin adds several symbols to a `maplibregl.Diplomat` namespace and adds a single method to each instance of `maplibregl.Map`. The following documentation uses the notation `maplibregl.Diplomat.*` in case you include Diplomat as a script. However, if you import Diplomat as a module, these symbols are directly imported into your code, without any namespacing.
 
 ### `maplibregl.Diplomat.localizedName`
 
@@ -213,20 +215,33 @@ Example:
 maplibregl.Diplomat.getLocales().includes("en");
 ```
 
-### `maplibregl.Map.prototype.localizeStyle()`
+### `maplibregl.Diplomat.localizeStyle()`
 
 Updates each style layer's `text-field` value to match the given locales, upgrading any unlocalizable layer along the way.
 
-This method ugprades unlocalizable layers to localized multiline or inline labels depending on the `symbol-placement` layout property. To add a dual language label to a layer, set its `text-field` layout property manually using the [`maplibregl.Diplomat.localizedNameWithLocalGloss`](#maplibrediplomatlocalizednamewithlocalgloss) constant.
+This function ugprades unlocalizable layers to localized multiline or inline labels depending on the `symbol-placement` layout property. To add a dual language label to a layer, set its `text-field` layout property manually using the [`maplibregl.Diplomat.localizedNameWithLocalGloss`](#maplibrediplomatlocalizednamewithlocalgloss) constant.
 
 Parameters:
 
-- **`layers`** (`[object]`): The style layers to localize.
+- **`map`** (`maplibregl.Map`): The map to localize.
 - **`locales`** (`[string]`): The locales to insert into each layer, as a comma-separated list of [IETF language tags](https://en.wikipedia.org/wiki/IETF_language_tag). Uses the `language` URL hash parameter or browser preferences by default.
 - **`options`** (`object`):
+  - **`layers`** (`[string]`): If specified, only these style layers will be made localizable. Otherwise, any style layer that uses the unlocalized name property will be made localizable.
   - **`unlocalizedNameProperty`** (`string`): The name of the property holding the unlocalized name. `name` by default.
   - **`localizedNamePropertyFormat`** (`string`): "The format of properties holding localized names, where `$1` is replaced by an IETF language tag. `name:$1` by default.
   - **`options.uppercaseCountryNames`** (`boolean`): Whether to write country names in all uppercase, respecting the locale’s case conventions.
+
+Example:
+
+```js
+maplibregl.Diplomat.localizeStyle(map, ["eo"], {
+  layers: ["place-labels"],
+});
+```
+
+### `maplibregl.Map.prototype.localizeStyle()`
+
+A wrapper for [`maplibregl.Diplomat.localizeStyle()`](#maplibregldiplomatlocalizestyle) that does not require passing in a `maplibregl.Map`. Only available when including Diplomat as a script.
 
 Example:
 

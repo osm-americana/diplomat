@@ -932,58 +932,67 @@ export function getLocalizedCountryNameExpression(code) {
   ];
 }
 
-if (typeof window !== "undefined" && "maplibregl" in window) {
-  maplibregl.Diplomat = {
+/**
+ * Updates each style layer's `text-field` value to match the given locales, upgrading any unlocalizable layer along the way.
+ *
+ * This method ugprades unlocalizable layers to localized multiline or inline labels depending on the `symbol-placement` layout property. To add a dual language label to a layer, set its `text-field` layout property manually using the `localizedNameWithLocalGloss` constant.
+ *
+ * @param {maplibregl.Map} map - The map to localize.
+ * @param {[string]} locales - The locales to insert into each layer.
+ * @param {[string]} options.layers - If specified, only these style layers will be made localizable. Otherwise, any style layer that uses the unlocalized name property will be made localizable.
+ * @param {string} options.unlocalizedNameProperty - The name of the property holding the unlocalized name.
+ * @param {string} options.localizedNamePropertyFormat - The format of properties holding localized names, where `$1` is replaced by an IETF language tag.
+ * @param {boolean} options.uppercaseCountryNames Whether to write country names in all uppercase, respecting the locale’s case conventions.
+ */
+export function localizeStyle(map, locales = getLocales(), options = {}) {
+  let style = map.getStyle();
+
+  let localizedNameExpression = getLocalizedNameExpression(locales, options);
+  let legacyLocalizedNameExpression = getLocalizedNameExpression(locales, {
+    ...options,
+    includesLegacyFields: true,
+  });
+
+  let layers = options.layers?.map((n) => style.layers[n]) || style.layers;
+  for (let layer of layers) {
+    prepareLayer(layer, options?.unlocalizedNameProperty);
+    localizeLayer(
+      layer,
+      locales[0],
+      localizedNameExpression,
+      legacyLocalizedNameExpression,
+    );
+  }
+
+  let countryNames = getLocalizedCountryNames(locales, {
+    uppercase: options?.uppercaseCountryNames,
+  });
+  map.setGlobalStateProperty(countryNamesByCodeVariable, countryNames);
+
+  map.setStyle(style);
+}
+
+if (typeof window !== "undefined") {
+  window.Diplomat = {
     getGlobalStateForLocalization,
     getLanguageFromURL,
     getLocales,
     getLocalizedCountryNameExpression,
     listValuesExpression,
     localizeLayers,
+    localizeStyle,
     localizedName,
     localizedNameInline,
     localizedNameWithLocalGloss,
   };
+  if ("maplibregl" in window) {
+    maplibregl.Diplomat = window.Diplomat;
 
-  /**
-   * Updates each style layer's `text-field` value to match the given locales, upgrading any unlocalizable layer along the way.
-   *
-   * This method ugprades unlocalizable layers to localized multiline or inline labels depending on the `symbol-placement` layout property. To add a dual language label to a layer, set its `text-field` layout property manually using the `localizedNameWithLocalGloss` constant.
-   *
-   * @param {[string]} locales - The locales to insert into each layer.
-   * @param {[string]} options.layers - If specified, only these style layers will be made localizable. Otherwise, any style layer that uses the unlocalized name property will be made localizable.
-   * @param {string} options.unlocalizedNameProperty - The name of the property holding the unlocalized name.
-   * @param {string} options.localizedNamePropertyFormat - The format of properties holding localized names, where `$1` is replaced by an IETF language tag.
-   * @param {boolean} options.uppercaseCountryNames Whether to write country names in all uppercase, respecting the locale’s case conventions.
-   */
-  maplibregl.Map.prototype.localizeStyle = function (
-    locales = getLocales(),
-    options = {},
-  ) {
-    let style = this.getStyle();
-
-    let localizedNameExpression = getLocalizedNameExpression(locales, options);
-    let legacyLocalizedNameExpression = getLocalizedNameExpression(locales, {
-      ...options,
-      includesLegacyFields: true,
-    });
-
-    let layers = options.layers?.map((n) => style.layers[n]) || style.layers;
-    for (let layer of layers) {
-      prepareLayer(layer, options?.unlocalizedNameProperty);
-      localizeLayer(
-        layer,
-        locales[0],
-        localizedNameExpression,
-        legacyLocalizedNameExpression,
-      );
-    }
-
-    let countryNames = getLocalizedCountryNames(locales, {
-      uppercase: options?.uppercaseCountryNames,
-    });
-    this.setGlobalStateProperty(countryNamesByCodeVariable, countryNames);
-
-    this.setStyle(style);
-  };
+    maplibregl.Map.prototype.localizeStyle = function (
+      locales = getLocales(),
+      options = {},
+    ) {
+      localizeStyle(this, locales, options);
+    };
+  }
 }
