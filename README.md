@@ -2,32 +2,32 @@
 
 Diplomat prepares your interactive map for an international audience. With a few lines of code, your [MapLibre GL&nbsp;JS](https://github.com/maplibre/maplibre-gl-js/)–powered map will speak the user’s preferred language while informing them about local languages the world over.
 
-| Before                                                                                                                  | After                                                                                                                                                                                   |
-| ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| <img src="docs/navajo-nation.png" width="400" alt="Navajo Nation;Naabeehó Bináhásdzo">                                  | [<img src="docs/navajo-nation-es.png" width="400" alt="Nación Navajo (Navajo Nation • Naabeehó Bináhásdzo)">](https://americanamap.org/#map=9/36.2134/-109.2837&language=es)            |
-| <img src="docs/north-sea.png" width="400" alt="North Sea / Nordsee / Noordzee / Nordsøen / Nordsjøen / Mer du Nord">    | [<img src="docs/north-sea-la.png" width="400" alt="Mare Germanicum">](https://americanamap.org/#map=4/56/3&language=la)                                                                 |
+| Before                                                                                                                 | After                                                                                                                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <img src="docs/navajo-nation.png" width="400" alt="Navajo Nation;Naabeehó Bináhásdzo">                                 | [<img src="docs/navajo-nation-es.png" width="400" alt="Nación Navajo (Navajo Nation • Naabeehó Bináhásdzo)">](https://americanamap.org/#map=9/36.2134/-109.2837&language=es)           |
+| <img src="docs/north-sea.png" width="400" alt="North Sea / Nordsee / Noordzee / Nordsøen / Nordsjøen / Mer du Nord">   | [<img src="docs/north-sea-la.png" width="400" alt="Mare Germanicum">](https://americanamap.org/#map=4/56/3&language=la)                                                                |
 | <img src="docs/section-ross.png" width="400" alt="Ross Avenue;Tennessee Avenue at Rhode Island Avenue;Section Avenue"> | [<img src="docs/section-ross-en.png" width="400" alt="Ross Avenue • Tennessee Avenue at Rhode Island Avenue • Section Avenue">](https://americanamap.org/#map=17/39.168568/-84.460075) |
 
 ## Features
 
 Diplomat gives all parties a win-win:
 
-* Tailors labels to the user’s preferred language.
-* Respects multilingualism with optional dual language labels: both the user’s preferred language and the local native language.
-* Recognizes any language, dialect, or script out of the box.
+- Tailors labels to the user’s preferred language.
+- Respects multilingualism with optional dual language labels: both the user’s preferred language and the local native language.
+- Recognizes any language, dialect, or script out of the box.
 
 Diplomat lets your designer save face:
 
-* Uses space efficiently with both multiline and inline label layouts.
-* Deduplicates names within a label to avoid clutter.
-* Preserves diacritics in English exonyms where appropriate.
-* Respects right-to-left and vertical text layouts.
+- Uses space efficiently with both multiline and inline label layouts.
+- Deduplicates names within a label to avoid clutter.
+- Preserves diacritics in English exonyms where appropriate.
+- Respects right-to-left and vertical text layouts.
 
 Diplomat works quietly behind the scenes:
 
-* Changes the style on the fly at runtime – no need to publish a new style or tileset for every language.
-* You choose which style layers to localize, or localize them all automatically.
-* Supports multiple popular vector tile schemas without hacky workarounds, plus custom vector tilesets and GeoJSON sources.
+- Changes the style on the fly at runtime – no need to publish a new style or tileset for every language.
+- You choose which style layers to localize, or localize them all automatically.
+- Supports multiple popular vector tile schemas without hacky workarounds, plus custom vector tilesets and GeoJSON sources.
 
 All localization is subject to the availability of localized names in the map data source. See [the caveats](#caveats) for more details.
 
