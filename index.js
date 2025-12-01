@@ -936,10 +936,13 @@ export function getLocalizedCountryNameExpression(code) {
  * Updates each style layer's `text-field` value to match the given locales, upgrading any unlocalizable layer along the way.
  *
  * This method ugprades unlocalizable layers to localized multiline or inline labels depending on the `symbol-placement` layout property. To add a dual language label to a layer, set its `text-field` layout property manually using the `localizedNameWithLocalGloss` constant.
+ * 
+ * If neither `options.layers` nor `options.sourceLayers` is specified, this function makes localizable any style layer that gets the feature property specified in `options.unlocalizedNameProperty`, or `name` by default.
  *
  * @param {maplibregl.Map} map - The map to localize.
  * @param {[string]} locales - The locales to insert into each layer.
- * @param {[string]} options.layers - If specified, only these style layers will be made localizable. Otherwise, any style layer that uses the unlocalized name property will be made localizable.
+ * @param {[string]} options.layers - The style layers with these IDs will be made localizable.
+ * @param {[string]} options.sourceLayers - The style layers that use these source layers will be made localizable. These are source layer IDs, not style layer IDs.
  * @param {string} options.unlocalizedNameProperty - The name of the property holding the unlocalized name.
  * @param {string} options.localizedNamePropertyFormat - The format of properties holding localized names, where `$1` is replaced by an IETF language tag.
  * @param {boolean} options.uppercaseCountryNames Whether to write country names in all uppercase, respecting the locale’s case conventions.
@@ -953,9 +956,13 @@ export function localizeStyle(map, locales = getLocales(), options = {}) {
     includesLegacyFields: true,
   });
 
-  let layers = options.layers?.map((n) => style.layers[n]) || style.layers;
-  for (let layer of layers) {
-    prepareLayer(layer, options?.unlocalizedNameProperty);
+  for (let layer of style.layers) {
+    let sourceLayer = layer["source-layer"];
+    if ((!options.layers && !options.sourceLayers) ||
+		options.layers?.includes(layer.id) ||
+		(sourceLayer && options.sourceLayers?.includes(sourceLayer))) {
+      prepareLayer(layer, options?.unlocalizedNameProperty);
+    }
     localizeLayer(
       layer,
       locales[0],

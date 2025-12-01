@@ -244,12 +244,15 @@ Updates each style layer's `text-field` value to match the given locales, upgrad
 
 This function ugprades unlocalizable layers to localized multiline or inline labels depending on the `symbol-placement` layout property. To add a dual language label to a layer, set its `text-field` layout property manually using the [`maplibregl.Diplomat.localizedNameWithLocalGloss`](#maplibrediplomatlocalizednamewithlocalgloss) constant.
 
+If neither `options.layers` nor `options.sourceLayers` is specified in `options`, this function makes localizable any style layer that gets the feature property specified in `options.unlocalizedNameProperty`, or `name` by default.
+
 Parameters:
 
 - **`map`** (`maplibregl.Map`): The map to localize.
 - **`locales`** (`[string]`): The locales to insert into each layer, as a comma-separated list of [IETF language tags](https://en.wikipedia.org/wiki/IETF_language_tag). Uses the `language` URL hash parameter or browser preferences by default.
 - **`options`** (`object`):
-  - **`layers`** (`[string]`): If specified, only these style layers will be made localizable. Otherwise, any style layer that uses the unlocalized name property will be made localizable.
+  - **`layers`** (`[string]`): The style layers with these IDs will be made localizable.
+  - **`sourceLayers`** (`[string]`): The style layers that use these source layers will be made localizable. These are source layer IDs, not style layer IDs.
   - **`unlocalizedNameProperty`** (`string`): The name of the property holding the unlocalized name. `name` by default.
   - **`localizedNamePropertyFormat`** (`string`): "The format of properties holding localized names, where `$1` is replaced by an IETF language tag. `name:$1` by default.
   - **`options.uppercaseCountryNames`** (`boolean`): Whether to write country names in all uppercase, respecting the locale’s case conventions.
