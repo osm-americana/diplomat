@@ -242,8 +242,6 @@ maplibregl.Diplomat.getLocales().includes("en");
 
 Updates each style layer's `text-field` value to match the given locales, upgrading any unlocalizable layer along the way.
 
-This function ugprades unlocalizable layers to localized multiline or inline labels depending on the `symbol-placement` layout property. To add a dual language label to a layer, set its `text-field` layout property manually using the [`maplibregl.Diplomat.localizedNameWithLocalGloss`](#maplibrediplomatlocalizednamewithlocalgloss) constant.
-
 If neither `options.layers` nor `options.sourceLayers` is specified in `options`, this function makes localizable any style layer that gets the feature property specified in `options.unlocalizedNameProperty`, or `name` by default.
 
 Parameters:
@@ -254,14 +252,16 @@ Parameters:
   - **`layers`** (`[string]`): The style layers with these IDs will be made localizable.
   - **`sourceLayers`** (`[string]`): The style layers that use these source layers will be made localizable. These are source layer IDs, not style layer IDs.
   - **`unlocalizedNameProperty`** (`string`): The name of the property holding the unlocalized name. `name` by default.
-  - **`localizedNamePropertyFormat`** (`string`): "The format of properties holding localized names, where `$1` is replaced by an IETF language tag. `name:$1` by default.
-  - **`options.uppercaseCountryNames`** (`boolean`): Whether to write country names in all uppercase, respecting the locale’s case conventions.
+  - **`localizedNamePropertyFormat`** (`string`): The format of properties holding localized names, where `$1` is replaced by an IETF language tag. `name:$1` by default.
+  - **`glossLocalNames`** (`boolean`): Whether to format each label as a dual language label including a local name gloss.
+  - **`uppercaseCountryNames`** (`boolean`): Whether to write country names in all uppercase, respecting the locale’s case conventions.
 
 Example:
 
 ```js
 maplibregl.Diplomat.localizeStyle(map, ["eo"], {
-  layers: ["place-labels"],
+  sourceLayers: ["place"],
+  glossLocalNames: true,
 });
 ```
 

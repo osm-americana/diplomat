@@ -139,12 +139,11 @@ const inlineSeparator = " \u2022 ";
  *
  * The transformed `text-field` property is only modified if it contains a reference to the feature property specified by `unlocalizedNameProperty`. If the layer’s `symbol-placement` layout property is set to either `line` or `line-center`, the resulting text field takes up only one line. Otherwise, the text field for a given feature may span multiple lines if its unlocalized name property is set to a list of values.
  *
- * This function does not introduce any dual language labels. To label features with both the user’s preferred name and the local name simultaneously, pass the layer ID, `text-field`, and `localizedNameWithLocalGloss` into `maplibregl.Map.prototype.setLayoutProperty`.
- *
  * @param {object} layer - The style layer to prepare for localization.
  * @param {string} unlocalizedNameProperty - The name of the feature property that holds the unlocalized name. References to this property are replaced by a more complex expression that can be localized dynamically.
+ * @param {boolean} glossLocalNames - Whether to format each label as a dual language label including a local name gloss.
  */
-export function prepareLayer(layer, unlocalizedNameProperty) {
+export function prepareLayer(layer, unlocalizedNameProperty, glossLocalNames) {
   let textField = layer.layout && layer.layout["text-field"];
   if (
     !textField ||
@@ -156,11 +155,11 @@ export function prepareLayer(layer, unlocalizedNameProperty) {
   let symbolPlacement = layer.layout && layer.layout["symbol-placement"];
   let isInline =
     symbolPlacement === "line" || symbolPlacement === "line-center";
-  let separator = isInline ? inlineSeparator : "\n";
-  let listValues = listValuesExpression(
-    ["var", localizedNameVariable],
-    separator,
-  );
+  let listValues = glossLocalNames
+    ? localizedNameWithLocalGlossCore
+    : isInline
+      ? localizedNameInlineCore
+      : localizedNameCore;
   let newTextField = replacePropertyReferences(
     textField,
     unlocalizedNameProperty || defaultUnlocalizedNameProperty,
@@ -422,6 +421,11 @@ export function listValuesExpression(valueList, separator, valueToOmit) {
   ];
 }
 
+const localizedNameCore = listValuesExpression(
+  ["var", localizedNameVariable],
+  "\n",
+);
+
 /**
  * The names in the user's preferred language, each on a separate line.
  */
@@ -429,8 +433,13 @@ export const localizedName = [
   "let",
   localizedNameVariable,
   "",
-  listValuesExpression(["var", localizedNameVariable], "\n"),
+  localizedNameCore,
 ];
+
+const localizedNameInlineCore = listValuesExpression(
+  ["var", localizedNameVariable],
+  inlineSeparator,
+);
 
 /**
  * The names in the user's preferred language, all on the same line.
@@ -439,7 +448,7 @@ export const localizedNameInline = [
   "let",
   localizedNameVariable,
   "",
-  listValuesExpression(["var", localizedNameVariable], inlineSeparator),
+  localizedNameInlineCore,
 ];
 
 /**
@@ -520,6 +529,80 @@ function overwriteSuffixExpression(target, newSuffix) {
 const localizedNameListVariable = `${variablePrefix}__localizedNameList`;
 const nameListVariable = `${variablePrefix}__nameList`;
 
+const localizedNameWithLocalGlossCore = [
+  "let",
+  localizedNameListVariable,
+  listValuesExpression(["var", localizedNameVariable], "\n"),
+  [
+    "case",
+    // If the name in the preferred and local languages match exactly...
+    [
+      "==",
+      ["var", localizedNameVariable],
+      ["get", "name"],
+      ["var", localizedCollatorVariable],
+    ],
+    // ...just pick one.
+    ["format", ["var", localizedNameListVariable]],
+    [
+      "let",
+      nameListVariable,
+      listValuesExpression(["get", "name"], "\n"),
+      [
+        "case",
+        // If the name in the preferred language is the same as the name in the
+        // local language except for the omission of diacritics and/or the addition
+        // of a suffix (e.g., "City" in English)...
+        startsWithExpression(
+          ["var", localizedNameVariable],
+          ["get", "name"],
+          ["var", diacriticInsensitiveCollatorVariable],
+        ),
+        // ...then replace the common prefix with the local name.
+        [
+          "format",
+          overwritePrefixExpression(
+            ["var", localizedNameVariable],
+            ["var", nameListVariable],
+          ),
+        ],
+        // If the name in the preferred language is the same as the name in the
+        // local language except for the omission of diacritics and/or the addition
+        // of a prefix (e.g., "City of" in English or "Ciudad de" in Spanish)...
+        endsWithExpression(
+          ["var", localizedNameVariable],
+          ["get", "name"],
+          ["var", diacriticInsensitiveCollatorVariable],
+        ),
+        // ...then replace the common suffix with the local name.
+        [
+          "format",
+          overwriteSuffixExpression(
+            ["var", localizedNameVariable],
+            ["var", nameListVariable],
+          ),
+        ],
+        // Otherwise, gloss the name in the local language if it differs from the
+        // localized name.
+        [
+          "format",
+          ["var", localizedNameListVariable],
+          "\n",
+          "(\u2068",
+          { "font-scale": 0.8 },
+          listValuesExpression(["get", "name"], inlineSeparator, [
+            "var",
+            localizedNameVariable,
+          ]),
+          { "font-scale": 0.8 },
+          "\u2069)",
+          { "font-scale": 0.8 },
+        ],
+      ],
+    ],
+  ],
+];
+
 /**
  * The name in the user's preferred language, followed by the name in the local
  * language in parentheses if it differs.
@@ -532,79 +615,7 @@ export const localizedNameWithLocalGloss = [
   ["collator", {}],
   diacriticInsensitiveCollatorVariable,
   ["collator", {}],
-  [
-    "let",
-    localizedNameListVariable,
-    listValuesExpression(["var", localizedNameVariable], "\n"),
-    [
-      "case",
-      // If the name in the preferred and local languages match exactly...
-      [
-        "==",
-        ["var", localizedNameVariable],
-        ["get", "name"],
-        ["var", localizedCollatorVariable],
-      ],
-      // ...just pick one.
-      ["format", ["var", localizedNameListVariable]],
-      [
-        "let",
-        nameListVariable,
-        listValuesExpression(["get", "name"], "\n"),
-        [
-          "case",
-          // If the name in the preferred language is the same as the name in the
-          // local language except for the omission of diacritics and/or the addition
-          // of a suffix (e.g., "City" in English)...
-          startsWithExpression(
-            ["var", localizedNameVariable],
-            ["get", "name"],
-            ["var", diacriticInsensitiveCollatorVariable],
-          ),
-          // ...then replace the common prefix with the local name.
-          [
-            "format",
-            overwritePrefixExpression(
-              ["var", localizedNameVariable],
-              ["var", nameListVariable],
-            ),
-          ],
-          // If the name in the preferred language is the same as the name in the
-          // local language except for the omission of diacritics and/or the addition
-          // of a prefix (e.g., "City of" in English or "Ciudad de" in Spanish)...
-          endsWithExpression(
-            ["var", localizedNameVariable],
-            ["get", "name"],
-            ["var", diacriticInsensitiveCollatorVariable],
-          ),
-          // ...then replace the common suffix with the local name.
-          [
-            "format",
-            overwriteSuffixExpression(
-              ["var", localizedNameVariable],
-              ["var", nameListVariable],
-            ),
-          ],
-          // Otherwise, gloss the name in the local language if it differs from the
-          // localized name.
-          [
-            "format",
-            ["var", localizedNameListVariable],
-            "\n",
-            "(\u2068",
-            { "font-scale": 0.8 },
-            listValuesExpression(["get", "name"], inlineSeparator, [
-              "var",
-              localizedNameVariable,
-            ]),
-            { "font-scale": 0.8 },
-            "\u2069)",
-            { "font-scale": 0.8 },
-          ],
-        ],
-      ],
-    ],
-  ],
+  localizedNameWithLocalGlossCore,
 ];
 
 /**
@@ -936,7 +947,7 @@ export function getLocalizedCountryNameExpression(code) {
  * Updates each style layer's `text-field` value to match the given locales, upgrading any unlocalizable layer along the way.
  *
  * This method ugprades unlocalizable layers to localized multiline or inline labels depending on the `symbol-placement` layout property. To add a dual language label to a layer, set its `text-field` layout property manually using the `localizedNameWithLocalGloss` constant.
- * 
+ *
  * If neither `options.layers` nor `options.sourceLayers` is specified, this function makes localizable any style layer that gets the feature property specified in `options.unlocalizedNameProperty`, or `name` by default.
  *
  * @param {maplibregl.Map} map - The map to localize.
@@ -945,6 +956,7 @@ export function getLocalizedCountryNameExpression(code) {
  * @param {[string]} options.sourceLayers - The style layers that use these source layers will be made localizable. These are source layer IDs, not style layer IDs.
  * @param {string} options.unlocalizedNameProperty - The name of the property holding the unlocalized name.
  * @param {string} options.localizedNamePropertyFormat - The format of properties holding localized names, where `$1` is replaced by an IETF language tag.
+ * @param {boolean} options.glossLocalNames - Whether to format each label as a dual language label including a local name gloss.
  * @param {boolean} options.uppercaseCountryNames Whether to write country names in all uppercase, respecting the locale’s case conventions.
  */
 export function localizeStyle(map, locales = getLocales(), options = {}) {
@@ -958,10 +970,16 @@ export function localizeStyle(map, locales = getLocales(), options = {}) {
 
   for (let layer of style.layers) {
     let sourceLayer = layer["source-layer"];
-    if ((!options.layers && !options.sourceLayers) ||
-		options.layers?.includes(layer.id) ||
-		(sourceLayer && options.sourceLayers?.includes(sourceLayer))) {
-      prepareLayer(layer, options?.unlocalizedNameProperty);
+    if (
+      (!options.layers && !options.sourceLayers) ||
+      options.layers?.includes(layer.id) ||
+      (sourceLayer && options.sourceLayers?.includes(sourceLayer))
+    ) {
+      prepareLayer(
+        layer,
+        options?.unlocalizedNameProperty,
+        options?.glossLocalNames,
+      );
     }
     localizeLayer(
       layer,

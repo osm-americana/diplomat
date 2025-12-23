@@ -83,11 +83,10 @@ addEventListener("load", () => {
   );
 
   map.once("styledata", (event) => {
-    map.setLayoutProperty(
-      "place-labels",
-      "text-field",
-      maplibregl.Diplomat.localizedNameWithLocalGloss,
-    );
+    map.localizeStyle(maplibregl.Diplomat.getLocales(), {
+      sourceLayers: ["place"],
+      glossLocalNames: true,
+    });
     map.localizeStyle(maplibregl.Diplomat.getLocales(), {
       uppercaseCountryNames: true,
     });
