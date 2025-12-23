@@ -1,6 +1,6 @@
 {
   "name": "@americana/diplomat",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Internationalization plugin for MapLibre GL JS",
   "keywords": [
     "maplibre-gl-js",
