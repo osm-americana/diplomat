@@ -29,10 +29,12 @@
   },
   "files": [
     "dist/",
-    "docs/"
+    "docs/",
+    "index.d.ts"
   ],
   "type": "module",
   "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "build": "esbuild index.js --bundle --minify --sourcemap --outdir=dist",
     "clean": "shx rm -rf dist build",
