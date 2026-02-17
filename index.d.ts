@@ -18,16 +18,16 @@ declare module "@americana/diplomat" {
   ): Expression;
 
   export function updateVariable(
-    letExpr: unknown[],
+    letExpr: Expression,
     variable: string,
     value: unknown,
   ): void;
 
   export function replacePropertyReferences(
-    expression: unknown[],
+    expression: Expression,
     propertyName: string,
     replacement: unknown,
-  ): unknown[] | undefined;
+  ): Expression | undefined;
 
   export function listValuesExpression(
     valueList: Expression,
