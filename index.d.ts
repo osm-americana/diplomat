@@ -1,7 +1,8 @@
 declare module "@americana/diplomat" {
   import type { Map as MaplibreMap } from "maplibre-gl";
 
-  type Expression = unknown[];
+  // MapLibre types expressions as `any`
+  type Expression = any;
 
   export function getLanguageFromURL(url: URL): string | null;
 
