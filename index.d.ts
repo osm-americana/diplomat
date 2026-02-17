@@ -1,5 +1,5 @@
 declare module "@americana/diplomat" {
-  import type { Map as MaplibreMap } from "maplibre-gl";
+  import type { Map as MaplibreMap, StyleLayer } from "maplibre-gl";
 
   // MapLibre types expressions as `any`
   type Expression = any;
@@ -36,13 +36,13 @@ declare module "@americana/diplomat" {
   ): Expression;
 
   export function prepareLayer(
-    layer: Record<string, unknown>,
+    layer: StyleLayer,
     unlocalizedNameProperty?: string,
     glossLocalNames?: boolean,
   ): void;
 
   export function localizeLayers(
-    layers: Record<string, unknown>[],
+    layers: StyleLayer[],
     locales?: string[],
     options?: {
       unlocalizedNameProperty?: string;
