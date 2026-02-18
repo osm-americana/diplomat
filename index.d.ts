@@ -58,7 +58,7 @@ declare module "@americana/diplomat" {
   export function getGlobalStateForLocalization(
     locales: string[],
     options?: { uppercaseCountryNames?: boolean },
-  ): Record<string, unknown>;
+  ): Record<string, any>;
 
   export function getLocalizedCountryNameExpression(
     code: Expression,
