@@ -26,7 +26,7 @@ declare module "@americana/diplomat" {
   export function replacePropertyReferences(
     expression: Expression,
     propertyName: string,
-    replacement: unknown,
+    replacement: any,
   ): Expression | undefined;
 
   export function listValuesExpression(
