@@ -10,6 +10,81 @@ export function getLanguageFromURL(url) {
 }
 
 /**
+ Returns the powerset of the given array.
+ */
+function powerset(array) {
+  return array.reduce(
+    (accum, value) => [...accum, ...accum.map((pick) => [...pick, value])],
+    [[]],
+  );
+}
+
+/**
+ Compatibility shim for `Intl.Locale.prototype.variants`.
+ */
+function getVariants(locale) {
+  return locale.variants ?? locale.minimize().baseName.match(/-([-\w]+)/)?.[1];
+}
+
+/**
+ Returns an array of the language tags related to the given language tag, sorted from most specific to least specific.
+ 
+ @param {string} tag - The language tag that the returned language tags are related to.
+ @returns {[string]} A sorted array of related language tags, or an empty array if `tag` is malformed.
+ */
+export function getRelatedLanguageTags(tag) {
+  let locale;
+  try {
+    locale = new Intl.Locale(tag);
+  } catch {
+    return [];
+  }
+
+  let maximized = locale.maximize();
+  // The subtags and extensions used in OSM name:*=* subkeys.
+  let quals = [
+    maximized.script,
+    maximized.region,
+    getVariants(maximized),
+    maximized.numberingSystem,
+  ].filter((q) => q);
+  // Get all the combinations of components and convert them to language tags.
+  let tags = powerset(quals).map((quals) =>
+    [maximized.language, ...quals].join("-"),
+  );
+
+  // Add the original language tag, in case maximizing it dropped miscellaneous extensions.
+  tags.push(locale + "");
+  tags.push(locale.baseName);
+
+  // Validate each of the language tags.
+  let locales = tags
+    .map((tag) => {
+      try {
+        return new Intl.Locale(tag);
+      } catch {}
+    })
+    .filter((l) => l);
+
+  // Sort the locales from most specific to least specific.
+  let scoreLocale = (locale) => {
+    let tag = locale + "";
+    let score = 0;
+    score += tag.length ?? 0;
+    score += tag.split("-").length ?? 0;
+    // Prioritize variants, which are more specific than script and region.
+    score += getVariants(locale)?.length ?? 0;
+    // Prioritize extensions, which Intl.Locale.prototype.maximize can’t maximize.
+    score += tag.match(/(?:-[tx]-|-u-\w\w-)\w+/)?.[0]?.length ?? 0;
+    return score;
+  };
+  locales.sort((a, b) => scoreLocale(b) - scoreLocale(a));
+
+  let validTags = locales.map((l) => l + "");
+  return [...new Set(validTags)];
+}
+
+/**
  * Returns the languages that the user prefers.
  */
 export function getLocales() {
@@ -17,27 +92,10 @@ export function getLocales() {
   let parameter = getLanguageFromURL(window.location)?.split(",");
   // Fall back to the user's language preference.
   let userLocales = parameter ?? navigator.languages ?? [navigator.language];
-  let locales = [];
-  let localeSet = new Set(); // avoid duplicates
-  for (let locale of userLocales) {
-    // Add progressively less specific variants of each user-specified locale.
-    let components = locale.split("-");
-    while (components.length > 0) {
-      let parent = components.join("-");
-      try {
-        // Preflight the parent locale in case it’s incomplete like `en-x`.
-        new Intl.Locale(parent);
-        if (!localeSet.has(parent)) locales.push(parent);
-        localeSet.add(parent);
-      } catch {}
-      components.pop();
-      // A Unicode extension like -u-nu must be followed by another subtag.
-      if (components.at(-1)?.length === 2 && components.at(-2) === "u") {
-        components.pop();
-      }
-    }
-  }
-  return locales;
+  // Get a full fallback list.
+  let tags = userLocales.flatMap((l) => getRelatedLanguageTags(l));
+
+  return [...new Set(tags)];
 }
 
 const defaultUnlocalizedNameProperty = "name";

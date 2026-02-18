@@ -6,6 +6,8 @@ declare module "@americana/diplomat" {
 
   export function getLanguageFromURL(url: URL): string | null;
 
+  export function getRelatedLanguageTags(tag: string): string[];
+
   export function getLocales(): string[];
 
   export function getLocalizedNameExpression(

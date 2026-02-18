@@ -238,6 +238,23 @@ Example:
 maplibregl.Diplomat.getLocales().includes("en");
 ```
 
+### `maplibregl.Diplomat.getRelatedLanguageTags()`
+
+Returns an array of the language tags related to the given language tag, sorted from most specific to least specific.
+
+Parameters:
+ 
+- **`tag`** (`string`): The language tag that the returned language tags are related to.
+
+Returns a sorted array of related language tags, or an empty array if `tag` is malformed.
+
+Example:
+
+```js
+maplibregl.Diplomat.getRelatedLanguageTags("sr-RS").includes("sr-Cyrl");
+maplibregl.Diplomat.getRelatedLanguageTags("zh").includes("zh-Hans-CN");
+```
+
 ### `maplibregl.Diplomat.localizeStyle()`
 
 Updates each style layer's `text-field` value to match the given locales, upgrading any unlocalizable layer along the way.

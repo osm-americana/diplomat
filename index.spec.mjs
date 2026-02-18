@@ -7,6 +7,7 @@ import {
   getLocalizedCountryNameExpression,
   getLocalizedCountryNames,
   getLocalizedNameExpression,
+  getRelatedLanguageTags,
   listValuesExpression,
   localizeLayers,
   localizedName,
@@ -65,6 +66,57 @@ describe("getLanguageFromURL", function () {
   });
 });
 
+describe("getRelatedLanguageTags", function () {
+  it("maximizes the locale", function () {
+    assert.deepEqual(getRelatedLanguageTags("zh"), [
+      "zh-Hans-CN",
+      "zh-Hans",
+      "zh-CN",
+      "zh",
+    ]);
+  });
+  it("progressively minimizes the locale", function () {
+    assert.deepEqual(getRelatedLanguageTags("zh-Hant-TW"), [
+      "zh-Hant-TW",
+      "zh-Hant",
+      "zh-TW",
+      "zh",
+    ]);
+  });
+  it("preserves the original locale", function () {
+    assert(getRelatedLanguageTags("zh-TW").includes("zh-TW"));
+  });
+  it("prefers extended locales over nonextended locales", function () {
+    const t = getRelatedLanguageTags("en-t-zh");
+    assert(t.includes("en-t-zh"));
+    assert(t.includes("en-Latn-US"));
+    assert(t.indexOf("en-t-zh") < t.indexOf("en-Latn-US"));
+
+    const nu = getRelatedLanguageTags("zh-u-nu-hant");
+    assert(nu.includes("zh-u-nu-hant"));
+    assert(nu.includes("zh-Hans-CN"));
+    assert(nu.indexOf("zh-u-nu-hant") < nu.indexOf("zh-Hans-CN"));
+
+    const sd = getRelatedLanguageTags("en-u-sd-usnc");
+    assert(sd.includes("en-u-sd-usnc"));
+    assert(sd.includes("en-Latn-US"));
+    assert(sd.indexOf("en-u-sd-usnc") < sd.indexOf("en-Latn-US"));
+
+    const x = getRelatedLanguageTags("fr-x-gallo");
+    assert(x.includes("fr-x-gallo"));
+    assert(x.includes("fr-Latn-FR"));
+    assert(x.indexOf("fr-x-gallo") < x.indexOf("fr-Latn-FR"));
+  });
+  it("prefers subtag over supertag", function () {
+    const related = getRelatedLanguageTags("es-fonipa");
+    assert(related.includes("es-Latn-ES-fonipa"));
+    assert(related.includes("es-fonipa"));
+    assert(related.includes("es-Latn-ES"));
+    assert(related.indexOf("es-Latn-ES-fonipa") < related.indexOf("es-fonipa"));
+    assert(related.indexOf("es-fonipa") < related.indexOf("es-Latn-ES"));
+  });
+});
+
 describe("getLocales", function () {
   beforeEach(function () {
     global.window = {};
@@ -96,26 +148,26 @@ describe("getLocales", function () {
       writable: true,
       configurable: true,
     });
-    assert.deepEqual(getLocales(), ["tlh-UN", "tlh", "ase"]);
+    assert.deepEqual(getLocales(), [
+      "tlh-UN",
+      "tlh",
+      "ase-Sgnw-US",
+      "ase-Sgnw",
+      "ase-US",
+      "ase",
+    ]);
   });
   it("gets locales from the URL", function () {
     window.location = new URL(
       "http://localhost:1776/#map=1/2/3&language=tlh-UN,ase",
     );
-    assert.deepEqual(getLocales(), ["tlh-UN", "tlh", "ase"]);
-    window.location = new URL(
-      "http://localhost:1776/#map=1/2/3&language=en-t-zh,zh-u-nu-hant,en-u-sd-usnc,es-fonipa,fr-x-gallo",
-    );
     assert.deepEqual(getLocales(), [
-      "en-t-zh",
-      "en",
-      "zh-u-nu-hant",
-      "zh",
-      "en-u-sd-usnc",
-      "es-fonipa",
-      "es",
-      "fr-x-gallo",
-      "fr",
+      "tlh-UN",
+      "tlh",
+      "ase-Sgnw-US",
+      "ase-Sgnw",
+      "ase-US",
+      "ase",
     ]);
   });
 });
