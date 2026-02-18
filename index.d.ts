@@ -20,7 +20,7 @@ declare module "@americana/diplomat" {
   export function updateVariable(
     letExpr: Expression,
     variable: string,
-    value: unknown,
+    value: any,
   ): void;
 
   export function replacePropertyReferences(
