@@ -14,7 +14,7 @@ Diplomat gives all parties a win-win:
 
 - Tailors labels to the user’s preferred language.
 - Respects multilingualism with optional dual language labels: both the user’s preferred language and the local native language.
-- Recognizes any language, dialect, or script out of the box.
+- Recognizes any language, dialect, or script out of the box with sophisticated language code matching.
 
 Diplomat lets your designer save face:
 
@@ -300,7 +300,7 @@ Diplomat only switches between languages that are present in the stylesheet’s 
 
 By default, MapLibre GL&nbsp;JS does not support bidirectional text. Arabic, Hebrew, and other right-to-left languages will be unreadable unless you [install the mapbox-gl-rtl-text plugin](https://maplibre.org/maplibre-gl-js/docs/examples/add-support-for-right-to-left-scripts/).
 
-Diplomat only performs basic language fallbacks according to the [ICU locale fallback algorithm](https://unicode-org.github.io/icu/userguide/locale/#fallback). It makes no attempt to fallback to a related but distinct language code, for example from `sr-Cyrl` to `ru` or from `nb` to `no`. Instead, the user can [set their preferred languages](https://www.w3.org/International/questions/qa-lang-priorities) in their browser or operating system settings.
+Diplomat performs basic language fallbacks according to the [ICU locale fallback algorithm](https://unicode-org.github.io/icu/userguide/locale/#fallback). Additionally, it implements the [Likely Subtags](https://www.unicode.org/reports/tr35/#Likely_Subtags) algorithm of Unicode Technical Standard #35, so for example requesting either `zh` or `cmn` returns a name tagged as `zh-Hans-CN`, among other variations. However, in general, it does not fall back to a related but distinct language code, such as from `sr-Cyrl` to `ru` or from `nb` to `no`. Instead, the user can [set their preferred languages](https://www.w3.org/International/questions/qa-lang-priorities) in their browser or operating system settings.
 
 For historical reasons, [OpenStreetMap’s coverage in many reasons](https://wiki.openstreetmap.org/wiki/Multilingual_names) encodes multiple local names separated by human-readable punctuation. Diplomat makes no attempt to guess which punctuation is part of a name and which punctuation delimits two names.
 
