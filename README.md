@@ -172,7 +172,7 @@ Example:
 map.setLayoutProperty(
   "city-labels",
   "text-field",
-  maplibregl.Diplomat.localizedNameWithGloss,
+  maplibregl.Diplomat.localizedNameWithLocalGloss,
 );
 ```
 
