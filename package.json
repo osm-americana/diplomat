@@ -29,14 +29,13 @@
   },
   "files": [
     "dist/",
-    "docs/",
-    "index.d.ts"
+    "docs/"
   ],
   "type": "module",
   "main": "index.js",
-  "types": "index.d.ts",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "esbuild index.js --bundle --minify --sourcemap --outdir=dist",
+    "build": "tsc && esbuild index.js --bundle --minify --sourcemap --outdir=dist",
     "clean": "shx rm -rf dist build",
     "format": "prettier --write --list-different .",
     "start": "shx cp -r example dist && open 'http://127.0.0.1:8000/example/#map=4/40.5/-94&language=got' && esbuild index.js --bundle --outdir=dist --servedir=dist --watch",
@@ -50,6 +49,7 @@
     "esbuild": "0.27.4",
     "open": "^11.0.0",
     "prettier": "^3.6.2",
-    "shx": "^0.4.0"
+    "shx": "^0.4.0",
+    "typescript": "^6.0.2"
   }
 }

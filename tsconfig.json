@@ -2,9 +2,12 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "declaration": true,
+    "skipLibCheck": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist"
   },
-  "include": ["src/**/*.ts"]
+  "include": ["index.js"]
 }
