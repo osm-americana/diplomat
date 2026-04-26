@@ -603,12 +603,13 @@ describe("localizedNameWithLocalGloss", function () {
       "Null Island",
       "Terra Nullius • 空虛島",
     );
+    // Looks silly, but this could be an intentional way of emphasizing that all three of the usual local languages call it the same. Otherwise, this is a tagging error that we don’t need to paper over.
     expectGloss(
       "en",
       "Null Island",
       "Null Island;Null Island;Null Island",
       "Null Island",
-      "",
+      "Null Island • Null Island",
     );
   });
 });
@@ -675,21 +676,21 @@ describe("listValuesExpression", function () {
     );
   });
 
-  it("lists a maximum number of values", function () {
-    // https://www.openstreetmap.org/node/9816809799
+  it("lists many values", function () {
+    // https://www.openstreetmap.org/node/9816809799/history/1
     assert.strictEqual(
       evaluatedExpression(
         "马岔河村;菜园村;刘灿东村;后于口村;王石楼村;李岔河村;岔河新村;富康新村;前鱼口村",
         "、",
       ),
-      "马岔河村、菜园村、刘灿东村;后于口村;王石楼村;李岔河村;岔河新村;富康新村;前鱼口村",
+      "马岔河村、菜园村、刘灿东村、后于口村、王石楼村、李岔河村、岔河新村、富康新村、前鱼口村",
     );
     assert.strictEqual(
       evaluatedExpression(
         "one;two;three;four;five;six;seven;eight;nine;ten",
         ", ",
       ),
-      "one, two, three;four;five;six;seven;eight;nine;ten",
+      "one, two, three, four, five, six, seven, eight, nine, ten",
     );
   });
 

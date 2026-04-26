@@ -311,147 +311,6 @@ export function localizeLayers(layers, locales = getLocales(), options = {}) {
 }
 
 /**
- * Recursively scans a semicolon-delimited value list, replacing a finite number
- * of semicolons with a separator, starting from the given index.
- *
- * This expression nests recursively by the maximum number of replacements. Take
- * special care to minimize this limit, which exponentially increases the length
- * of a property value in JSON. Excessive nesting causes acute performance
- * problems when loading the style.
- *
- * The returned expression can be complex, so use it only once within a property
- * value. To reuse the evaluated value, bind it to a variable in a let
- * expression.
- *
- * @param list The overall string expression to search within.
- * @param separator A string to insert after the value, or an expression that
- *  evaluates to this string.
- * @param listStart A zero-based index into the list at which the search begins.
- * @param numReplacements The maximum number of replacements remaining.
- */
-function listValueExpression(
-  list,
-  separator,
-  valueToOmit,
-  listStart,
-  numReplacements,
-) {
-  let asIs = ["slice", list, listStart];
-  if (numReplacements <= 0) {
-    return asIs;
-  }
-
-  let iteration = numReplacements;
-  let rawSeparator = ";";
-  let needleStartVariable = `${variablePrefix}__needleStart${iteration}`;
-  let needleEndVariable = `${variablePrefix}__needleEnd${iteration}`;
-  let valueVariable = `${variablePrefix}__value${iteration}`;
-  let lookaheadVariable = `${variablePrefix}__lookahead${iteration}`;
-  let nextListStartVariable = `${variablePrefix}__nextListStart${iteration}`;
-  return [
-    "let",
-    needleStartVariable,
-    ["index-of", rawSeparator, list, listStart],
-    [
-      "case",
-      [">=", ["var", needleStartVariable], 0],
-      // Found a semicolon.
-      [
-        "let",
-        valueVariable,
-        ["slice", list, listStart, ["var", needleStartVariable]],
-        needleEndVariable,
-        ["+", ["var", needleStartVariable], rawSeparator.length],
-        [
-          "concat",
-          // Start with everything before the semicolon unless it's the value to
-          // omit.
-          [
-            "case",
-            ["==", ["var", valueVariable], valueToOmit],
-            "",
-            ["var", valueVariable],
-          ],
-          [
-            "let",
-            lookaheadVariable,
-            // Look ahead by one character.
-            [
-              "slice",
-              list,
-              ["var", needleEndVariable],
-              ["+", ["var", needleEndVariable], rawSeparator.length],
-            ],
-            [
-              "let",
-              // Skip past the current value and semicolon for any subsequent
-              // searches.
-              nextListStartVariable,
-              [
-                "+",
-                ["var", needleEndVariable],
-                // Also skip past any escaped semicolon or space padding.
-                [
-                  "match",
-                  ["var", lookaheadVariable],
-                  [rawSeparator, " "],
-                  rawSeparator.length,
-                  0,
-                ],
-              ],
-              [
-                "case",
-                // If the only remaining value is the value to omit, stop
-                // scanning.
-                [
-                  "==",
-                  ["slice", list, ["var", nextListStartVariable]],
-                  valueToOmit,
-                ],
-                "",
-                [
-                  "concat",
-                  [
-                    "case",
-                    // If the lookahead character is another semicolon, append
-                    // an unescaped semicolon.
-                    ["==", ["var", lookaheadVariable], rawSeparator],
-                    rawSeparator,
-                    // Otherwise, if the value is the value to omit, do nothing.
-                    ["==", ["var", valueVariable], valueToOmit],
-                    "",
-                    // Otherwise, append the passed-in separator.
-                    separator,
-                  ],
-                  // Recurse for the next value in the value list.
-                  listValueExpression(
-                    list,
-                    separator,
-                    valueToOmit,
-                    ["var", nextListStartVariable],
-                    numReplacements - 1,
-                  ),
-                ],
-              ],
-            ],
-          ],
-        ],
-      ],
-      // No semicolons left in the string, so stop looking and append the value as is.
-      asIs,
-    ],
-  ];
-}
-
-/**
- * Maximum number of values in a semicolon-delimited list of values.
- *
- * Increasing this constant deepens recursion for replacing delimiters in the
- * list, potentially affecting style loading performance.
- */
-const maxValueListLength = 3;
-
-/**
  * Returns an expression interpreting the given string as a list of tag values,
  * pretty-printing the standard semicolon delimiter with the given separator.
  *
@@ -468,22 +327,85 @@ const maxValueListLength = 3;
  * @returns {Expression}
  */
 export function listValuesExpression(valueList, separator, valueToOmit) {
-  let maxSeparators = maxValueListLength - 1;
-  let valueListVariable = `${variablePrefix}__valueList`;
-  let valueToOmitVariable = `${variablePrefix}__valueToOmit`;
+  // Replace the ;; escape sequence with a placeholder sequence unlikely to
+  // legitimately occur inside a value or separator.
+  const objReplacementChar = "\x91\ufffc\x92"; // https://overpass-turbo.eu/s/1pJx
+  let escapedValueList = [
+    "join",
+    ["split", valueList, ";;"],
+    objReplacementChar,
+  ];
+
+  // Collapse any space following the delimiter.
+  let collapsedValueList = ["join", ["split", escapedValueList, "; "], ";"];
+
+  let valuesVariable = `${variablePrefix}__values`;
+  let omissionIndexVariable = `${variablePrefix}__omissionIndex`;
+  let abridgedValuesVariable = `${variablePrefix}__abridgedValues`;
   return [
     "let",
-    valueListVariable,
-    valueList,
-    valueToOmitVariable,
-    valueToOmit || ";",
-    listValueExpression(
-      ["var", valueListVariable],
-      separator,
-      ["var", valueToOmitVariable],
-      0,
-      maxSeparators,
-    ),
+    valuesVariable,
+    ["split", collapsedValueList, ";"],
+    [
+      "let",
+      omissionIndexVariable,
+      valueToOmit ? ["index-of", valueToOmit, ["var", valuesVariable]] : -1,
+      [
+        "let",
+        abridgedValuesVariable,
+        [
+          "match",
+          ["var", omissionIndexVariable],
+          -1,
+          // Nothing to elide.
+          ["join", ["var", valuesVariable], separator],
+          // Produce the items before and after the omission index, eliding the value at that index.
+          [
+            "concat",
+            [
+              "join",
+              [
+                "slice",
+                ["var", valuesVariable],
+                0,
+                ["var", omissionIndexVariable],
+              ],
+              separator,
+            ],
+            // Leave only a separator in place of the omitted item, unless it’s at either end of the list.
+            [
+              "case",
+              [
+                "any",
+                ["==", ["var", omissionIndexVariable], 0],
+                [
+                  "==",
+                  ["var", omissionIndexVariable],
+                  ["-", ["length", ["var", valuesVariable]], 1],
+                ],
+              ],
+              "",
+              separator,
+            ],
+            [
+              "join",
+              [
+                "slice",
+                ["var", valuesVariable],
+                ["+", ["var", omissionIndexVariable], 1],
+              ],
+              separator,
+            ],
+          ],
+        ],
+        // Unescape any escaped semicolons.
+        [
+          "join",
+          ["split", ["var", abridgedValuesVariable], objReplacementChar],
+          ";",
+        ],
+      ],
+    ],
   ];
 }
 
