@@ -33,7 +33,7 @@ All localization is subject to the availability of localized names in the map da
 
 ## Requirements
 
-Diplomat is compatible with applications using MapLibre GL&nbsp;JS v5.13.0 and above.
+Diplomat is compatible with applications using MapLibre GL&nbsp;JS v5.22.0 and above.
 
 The stylesheet must use the newer [expression](https://maplibre.org/maplibre-style-spec/expressions/) syntax; [legacy style functions](https://maplibre.org/maplibre-style-spec/deprecations/#function) are not supported. The stylesheet’s sources must conform to [Diplomat’s schema](#schema). Several popular vector tilesets already conform to this schema, including:
 
@@ -116,7 +116,7 @@ Diplomat can manipulate any GeoJSON or vector tile source, as long as it include
 
 For compatibility with the [OpenMapTiles](https://openmaptiles.org/schema/) schema, `name_en` and `name_de` are also recognized as alternatives to `name:en` and `name:de` for English and German, respectively, but only in the `transportation_name` layer. For performance reasons, Diplomat does not look for this format by default for any other language or layer.
 
-Each of the supported properties may be set to a list of values separated by [semicolons](https://wiki.openstreetmap.org/wiki/Semi-colon_value_separator). For example, if a place speaks both English and French, `name` should be `English Name;French Name`. Similarly, if a landmark has three equally common names in Spanish, regardless of dialect, `name:es` should be `Nombre Uno;Nombre Dos;Nombre Tres`. In the rare case that a single name contains a semicolon, it should be escaped as a double semicolon (`;;`).
+Each of the supported properties may be set to a list of values separated by [semicolons](https://wiki.openstreetmap.org/wiki/Semi-colon_value_separator). For example, if a place speaks both English and French, `name` should be `English Name;French Name`. Similarly, if a landmark has three equally common names in Spanish, regardless of dialect, `name:es` should be `Nombre Uno;Nombre Dos;Nombre Tres`. The list can contain an unlimited number of values. In the rare case that a single name contains a semicolon, it should be escaped as a double semicolon (`;;`).
 
 ## API
 
@@ -243,7 +243,7 @@ maplibregl.Diplomat.getLocales().includes("en");
 Returns an array of the language tags related to the given language tag, sorted from most specific to least specific.
 
 Parameters:
- 
+
 - **`tag`** (`string`): The language tag that the returned language tags are related to.
 
 Returns a sorted array of related language tags, or an empty array if `tag` is malformed.
