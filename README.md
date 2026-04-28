@@ -304,7 +304,7 @@ By default, MapLibre GL&nbsp;JS does not support bidirectional text. Arabic, Heb
 
 Diplomat performs basic language fallbacks according to the [ICU locale fallback algorithm](https://unicode-org.github.io/icu/userguide/locale/#fallback). Additionally, it implements the [Likely Subtags](https://www.unicode.org/reports/tr35/#Likely_Subtags) algorithm of Unicode Technical Standard #35, so for example requesting either `zh` or `cmn` returns a name tagged as `zh-Hans-CN`, among other variations. However, in general, it does not fall back to a related but distinct language code, such as from `sr-Cyrl` to `ru` or from `nb` to `no`. Instead, the user can [set their preferred languages](https://www.w3.org/International/questions/qa-lang-priorities) in their browser or operating system settings.
 
-For historical reasons, [OpenStreetMap’s coverage in many reasons](https://wiki.openstreetmap.org/wiki/Multilingual_names) encodes multiple local names separated by human-readable punctuation. Diplomat makes no attempt to guess which punctuation is part of a name and which punctuation delimits two names.
+For historical reasons, [OpenStreetMap’s coverage in many regions](https://wiki.openstreetmap.org/wiki/Multilingual_names) encodes multiple local names separated by human-readable punctuation. Diplomat makes no attempt to guess which punctuation is part of a name and which punctuation delimits two names.
 
 ## Acknowledgments
 
