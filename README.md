@@ -118,6 +118,8 @@ For compatibility with the [OpenMapTiles](https://openmaptiles.org/schema/) sche
 
 Each of the supported properties may be set to a list of values separated by [semicolons](https://wiki.openstreetmap.org/wiki/Semi-colon_value_separator). For example, if a place speaks both English and French, `name` should be `English Name;French Name`. Similarly, if a landmark has three equally common names in Spanish, regardless of dialect, `name:es` should be `Nombre Uno;Nombre Dos;Nombre Tres`. The list can contain an unlimited number of values. In the rare case that a single name contains a semicolon, it should be escaped as a double semicolon (`;;`).
 
+The original underlying data source (e.g., OpenStreetMap) may follow a different set of conventions as long as the GeoJSON or vector tile source translates it to this schema.
+
 ## API
 
 This plugin adds several symbols to a `maplibregl.Diplomat` namespace and adds a single method to each instance of `maplibregl.Map`. The following documentation uses the notation `maplibregl.Diplomat.*` in case you include Diplomat as a script. However, if you import Diplomat as a module, these symbols are directly imported into your code, without any namespacing.
