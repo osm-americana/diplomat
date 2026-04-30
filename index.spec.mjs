@@ -8,6 +8,7 @@ import {
   getLocalizedCountryNames,
   getLocalizedNameExpression,
   getRelatedLanguageTags,
+  getResolvedLocaleExpression,
   listValuesExpression,
   localizeLayers,
   localizedName,
@@ -212,6 +213,23 @@ describe("getLocalizedNameExpression", function () {
         ["get", "moniker"],
       ],
     );
+  });
+});
+
+describe("getResolvedLocaleExpression", function () {
+  it("coalesces names in each locale", function () {
+    assert.deepEqual(getResolvedLocaleExpression(["en-US", "en", "fr"]), [
+      "case",
+      ["has", "name:en-US"],
+      "en-US",
+      ["has", "name:en"],
+      "en",
+      ["has", "name:fr"],
+      "fr",
+      ["has", "name"],
+      "mul",
+      null,
+    ]);
   });
 });
 
