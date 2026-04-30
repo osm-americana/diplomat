@@ -257,6 +257,25 @@ maplibregl.Diplomat.getRelatedLanguageTags("sr-RS").includes("sr-Cyrl");
 maplibregl.Diplomat.getRelatedLanguageTags("zh").includes("zh-Hans-CN");
 ```
 
+### `maplibregl.Diplomat.getResolvedLocaleExpression()`
+
+Returns a `case` expression that evaluates to the language that [`localizedName`](#maplibrediplomatlocalizedname), [`localizedNameInline`](#maplibrediplomatlocalizednameinline), and [`localizedNameWithLocalGloss`](#maplibrediplomatlocalizednamewithlocalgloss) resolve to. This is useful for setting layout properties other than `text-field`, such as `text-font` and `text-size`.
+
+Parameters:
+
+- **`locales`** (`string[]`): Locales of the name fields to include.
+- **`options.includesLegacyFields`** (`boolean`): Whether to include the older fields that include underscores, for layers that have not transitioned to the colon syntax.
+- **`options.unlocalizedNameProperty`** (`string`): The name of the property holding the unlocalized name.
+- **`options.localizedNamePropertyFormat`** (`string`): The format of properties holding localized names, where `$1` is replaced by an IETF language tag.
+
+Example:
+
+```js
+maplibregl.Diplomat.getResolvedLocaleExpression(
+  maplibregl.Diplomat.getLocales(),
+);
+```
+
 ### `maplibregl.Diplomat.localizeStyle()`
 
 Updates each style layer's `text-field` value to match the given locales, upgrading any unlocalizable layer along the way.
