@@ -45,7 +45,7 @@
     "maplibre-gl": "^5.22.0"
   },
   "devDependencies": {
-    "@maplibre/maplibre-gl-style-spec": "^25.0.0",
+    "@maplibre/maplibre-gl-style-spec": "^26.1.0",
     "esbuild": "0.28.1",
     "open": "^11.0.0",
     "prettier": "^3.6.2",
