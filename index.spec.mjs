@@ -441,12 +441,12 @@ describe("localizeLayers", function () {
 describe("localizedName", function () {
   let evaluatedExpression = (locales, properties) =>
     expression
-      .createExpression(localizedTextField([...localizedName], locales))
+      .createExpression(localizedTextField([...localizedName], locales), 'layers[0].layout.text-field')
       .value.expression.evaluate(expressionContext(properties));
 
   it("is empty by default", function () {
     assert.strictEqual(
-      expression.createExpression(localizedName).value.expression.evaluate(
+      expression.createExpression(localizedName, 'layers[0].layout.text-field').value.expression.evaluate(
         expressionContext({
           name: "Null Island",
         }),
@@ -469,7 +469,7 @@ describe("localizedNameWithLocalGloss", function () {
   let evaluatedExpression = (locales, properties) =>
     expression
       .createExpression(
-        localizedTextField([...localizedNameWithLocalGloss], locales),
+        localizedTextField([...localizedNameWithLocalGloss], locales), 'layers[0].layout.text-field',
       )
       .value.expression.evaluate(expressionContext(properties));
 
@@ -621,7 +621,7 @@ describe("listValuesExpression", function () {
         localizedTextField(
           [...listValuesExpression(valueList, separator, valueToOmit)],
           ["en"],
-        ),
+        ), 'layers[0].layout.text-field',
       )
       .value.expression.evaluate(expressionContext({}));
 
@@ -753,7 +753,7 @@ describe("getLocalizedCountryNameExpression", function () {
   let evaluatedExpression = (properties, globalState) =>
     expression
       .createExpression(
-        [...getLocalizedCountryNameExpression(["get", "adm1_l"])],
+        [...getLocalizedCountryNameExpression(["get", "adm1_l"])], 'layers[0].layout.text-field',
         "string",
         globalState,
       )
@@ -762,7 +762,7 @@ describe("getLocalizedCountryNameExpression", function () {
   it("is the country code by default", function () {
     assert.strictEqual(
       expression
-        .createExpression(getLocalizedCountryNameExpression(["get", "adm1_r"]))
+        .createExpression(getLocalizedCountryNameExpression(["get", "adm1_r"]), 'layers[0].layout.text-field')
         .value.expression.evaluate(
           expressionContext({
             adm1_l: "CAN",
