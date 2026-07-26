@@ -43,6 +43,7 @@ The stylesheet must use the newer [expression](https://maplibre.org/maplibre-sty
 With additional configuration, Diplomat supports even more vector tilesets, including:
 
 - [Mapbox Streets](https://docs.mapbox.com/data/tilesets/reference/mapbox-streets-v8/#names)
+- [Maptoolkit](https://docs.maptoolkit.com/vector-tiles/schema-reference/#standard-fields)
 - [OpenHistoricalMap](https://wiki.openstreetmap.org/wiki/OpenHistoricalMap/Reuse#Vector_tiles)
 - [Shortbread](https://shortbread-tiles.org/schema/) implementations, e.g., [OpenStreetMap.org](https://vector.openstreetmap.org/), [VersaTiles](https://github.com/versatiles-org/versatiles-generator/)
 
