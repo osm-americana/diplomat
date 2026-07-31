@@ -119,24 +119,11 @@ describe("getRelatedLanguageTags", function () {
 });
 
 describe("getLocales", function () {
-  beforeEach(function () {
-    global.window = {};
-    // Instead of reassigning navigator, define properties on it
-    Object.defineProperty(global, "navigator", {
-      value: {
-        languages: [],
-        language: "",
-      },
-      writable: true,
-      configurable: true,
-    });
+  it("fails gracefully in a headless environment", function () {
+    assert.deepEqual(getLocales(), []);
   });
-  afterEach(function () {
-    delete global.window;
-    delete global.navigator;
-  });
-
   it("gets locales from preferences", function () {
+    global.window = {};
     window.location = new URL("http://localhost:1776/#map=1/2/3");
     // Update the navigator properties instead of reassigning
     Object.defineProperty(global.navigator, "languages", {
@@ -157,11 +144,22 @@ describe("getLocales", function () {
       "ase-US",
       "ase",
     ]);
+    delete global.window;
+    delete global.navigator;
   });
   it("gets locales from the URL", function () {
+    global.window = {};
     window.location = new URL(
       "http://localhost:1776/#map=1/2/3&language=tlh-UN,ase",
     );
+    Object.defineProperty(global, "navigator", {
+      value: {
+        languages: [],
+        language: "",
+      },
+      writable: true,
+      configurable: true,
+    });
     assert.deepEqual(getLocales(), [
       "tlh-UN",
       "tlh",
@@ -170,6 +168,8 @@ describe("getLocales", function () {
       "ase-US",
       "ase",
     ]);
+    delete global.window;
+    delete global.navigator;
   });
 });
 
