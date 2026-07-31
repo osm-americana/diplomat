@@ -91,6 +91,10 @@ export function getRelatedLanguageTags(tag) {
  * Returns the languages that the user prefers.
  */
 export function getLocales() {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return [];
+  }
+
   // Check the language "parameter" in the hash.
   let parameter = getLanguageFromURL(window.location)?.split(",");
   // Fall back to the user's language preference.
