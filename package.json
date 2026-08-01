@@ -42,7 +42,7 @@
     "test": "node --import ./test/setup.mjs --test 'index.spec.mjs'"
   },
   "peerDependencies": {
-    "maplibre-gl": "^5.22.0"
+    "maplibre-gl": "^5.22.0 || ^6.0.0"
   },
   "devDependencies": {
     "@maplibre/maplibre-gl-style-spec": "^26.1.0",
