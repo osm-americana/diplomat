@@ -161,7 +161,7 @@ map.setLayoutProperty(
 );
 ```
 
-### `maplibre.Diplomat.localizedNameWithLocalGloss`
+### `maplibregl.Diplomat.localizedNameWithLocalGloss`
 
 An expression that produces the name in the user's preferred language, followed by the name in the local language in parentheses if it differs.
 
